@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stationspladsen i Hjortshøj - Deltag Aarhus</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useRef, useEffect, Fragment } = React;
+
+    const DeltagAarhusProjectPage = () => {
+      const [viewMode, setViewMode] = useState('vertical');
+      const [activeIndex, setActiveIndex] = useState(null);
+      const [hoveredIndex, setHoveredIndex] = useState(null);
+      const itemRefs = useRef([]);
+
+      // Color tokens from deltag.aarhus.dk
+      const colors = {
+        petroleum500: '#008486',
+        petroleum800: '#3d6d6d',
+        petroleum900: '#2a4a4a',
+        petroleum100: '#e5eef0',
+        petroleum200: '#cfe0e2',
+        peach100: '#f7f0e8',
+        peach200: '#e8dfd4',
+        gray100: '#f6f6f6',
+        gray200: '#eaeaea',
+        gray300: '#e6e6e6',
+        gray400: '#dfdfdf',
+        gray600: '#9d9d9d',
+        gray700: '#858585',
+        gray800: '#525252',
+        gray900: '#333',
+        white: '#fff',
+        black: '#333',
+        orange500: '#ff5f31',
+        orange200: '#ffcfc1',
+        pink500: '#e91e63',
+        pink200: '#f8bbd9',
+        pink100: '#fce4ec',
+      };
+
+      // Using placeholder images - in production these would be actual URLs
+      const images = {
+        logo: 'https://deltag.aarhus.dk/themes/custom/hoeringsportal/static/images/AAK_02_venstrejusteret_sh.svg',
+        logoWhite: 'https://deltag.aarhus.dk/themes/custom/hoeringsportal/static/images/AAK_02_venstrejusteret_hvid.svg',
+        hero: 'https://deltag.aarhus.dk/sites/default/files/images/IMG_1251_cropped_0.jpg',
+        gaatur: 'https://deltag.aarhus.dk/sites/default/files/styles/responsive_small_teaser/public/images/IMG_1064_cropped.jpg',
+        workshop: 'https://deltag.aarhus.dk/sites/default/files/styles/responsive_small_teaser/public/images/IMG_1227%20%281%29%20-%20cropped.jpg',
+        popup: 'https://deltag.aarhus.dk/sites/default/files/styles/responsive_small_teaser/public/images/Billede3.jpg',
+        digital: 'https://deltag.aarhus.dk/sites/default/files/styles/responsive_small_teaser/public/images/Kategorier_stor_0.png',
+      };
+
+      const baseUrl = 'https://deltag.aarhus.dk';
+
+      const timelineData = [
+        {
+          id: 1,
+          date: '2023',
+          month: '',
+          title: 'Udpegning',
+          subtitle: 'Strategisk Byrumsplan',
+          description: 'Hjortshøj Stationsplads udpeges som ét af 13 byrum i Aarhus Kommunes Strategiske Byrumsplan.',
+          type: 'milestone',
+          status: 'completed',
+          icon: '📍',
+          image: null,
+          link: 'https://aarhus.dk/nyt/teknik-og-miljoe/2023/august-2023/raadmand-vil-puste-nyt-liv-i-13-af-byens-rum',
+          linkText: 'Læs om byrumsplanen'
+        },
+        {
+          id: 2,
+          date: '2025',
+          month: 'Forår',
+          title: 'Dialog med Fællesråd',
+          subtitle: 'Hjortshøj Landsbyforum',
+          description: 'Gåtur på Stationspladsen og efterfølgende møde om stedets identitet og potentialer med fællesrådet.',
+          type: 'meeting',
+          status: 'completed',
+          icon: '🚶',
+          image: images.gaatur,
+          link: `${baseUrl}/public_meeting/1296`,
+          linkText: 'Se detaljer om mødet'
+        },
+        {
+          id: 3,
+          date: '2025',
+          month: 'August',
+          title: 'Workshop med Virupskolen',
+          subtitle: 'Børne- og ungeperspektiv',
+          description: 'Formiddag sammen med skoleelever fra Virupskolen om fremtidens stationsplads.',
+          type: 'workshop',
+          status: 'completed',
+          icon: '🎨',
+          image: images.workshop,
+          link: `${baseUrl}/public_meeting/1298`,
+          linkText: 'Se workshoppen',
+          accentColor: 'pink'
+        },
+        {
+          id: 4,
+          date: '2025',
+          month: 'August',
+          title: 'Pop-up Dialog',
+          subtitle: 'Kaffe på Stationspladsen',
+          description: 'Pop-up og kaffe på Stationspladsen med borgere. Mange gode input fra det brede lokale borgerperspektiv.',
+          type: 'event',
+          status: 'completed',
+          icon: '☕',
+          image: images.popup,
+          link: `${baseUrl}/public_meeting/1212`,
+          linkText: 'Se pop-up dialogen'
+        },
+        {
+          id: 5,
+          date: '2025',
+          month: 'September',
+          title: 'Digital Dialog',
+          subtitle: 'Online høring',
+          description: 'Mulighed for at berige og kvalificere de identificerede temaer, samt komme med supplerende nye input.',
+          type: 'digital',
+          status: 'completed',
+          icon: '💬',
+          image: images.digital,
+          link: `${baseUrl}/public_meeting/1299`,
+          linkText: 'Se den digitale dialog'
+        },
+        {
+          id: 6,
+          date: '2025',
+          month: 'Efterår',
+          title: 'Udarbejdelse af Forslag',
+          subtitle: 'Design & Planlægning',
+          description: 'De mange input danner fundament for udarbejdelse af et forslag til omdannelsen af Hjortshøj Stationsplads.',
+          type: 'planning',
+          status: 'current',
+          icon: '📐',
+          image: null,
+          link: null,
+          linkText: null
+        },
+        {
+          id: 7,
+          date: '2026',
+          month: '',
+          title: 'Offentlig Høring',
+          subtitle: 'Forslaget præsenteres',
+          description: 'Forslaget til omdannelse af Stationspladsen sendes i offentlig høring.',
+          type: 'hearing',
+          status: 'upcoming',
+          icon: '📢',
+          image: null,
+          link: null,
+          linkText: null
+        },
+        {
+          id: 8,
+          date: '2026+',
+          month: '',
+          title: 'Realisering',
+          subtitle: 'Anlæg & Udførelse',
+          description: 'Omdannelsen af Hjortshøj Stationsplads realiseres.',
+          type: 'construction',
+          status: 'upcoming',
+          icon: '🏗️',
+          image: null,
+          link: null,
+          linkText: null
+        }
+      ];
+
+      const currentItemIndex = timelineData.findIndex(item => item.status === 'current');
+
+      const getStatusColor = (status, accentColor) => {
+        if (accentColor === 'pink') return colors.pink500;
+        switch (status) {
+          case 'completed': return colors.petroleum500;
+          case 'current': return colors.orange500;
+          case 'upcoming': return colors.gray600;
+          default: return colors.gray600;
+        }
+      };
+
+      const getStatusBg = (status, accentColor) => {
+        if (accentColor === 'pink') return colors.pink100;
+        switch (status) {
+          case 'completed': return colors.petroleum100;
+          case 'current': return colors.gray100;
+          case 'upcoming': return colors.gray200;
+          default: return colors.gray200;
+        }
+      };
+
+      const scrollToItem = (index) => {
+        if (itemRefs.current[index]) {
+          itemRefs.current[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setActiveIndex(index);
+        }
+      };
+
+      // Track which timeline item is visible on scroll
+      useEffect(() => {
+        const handleScroll = () => {
+          const viewportCenter = window.innerHeight / 2;
+          let closestIndex = null;
+          let closestDistance = Infinity;
+
+          itemRefs.current.forEach((ref, index) => {
+            if (ref) {
+              const rect = ref.getBoundingClientRect();
+              const itemCenter = rect.top + rect.height / 2;
+              const distance = Math.abs(itemCenter - viewportCenter);
+
+              if (distance < closestDistance) {
+                closestDistance = distance;
+                closestIndex = index;
+              }
+            }
+          });
+
+          if (closestIndex !== null && closestDistance < window.innerHeight) {
+            setActiveIndex(closestIndex);
+          }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+      }, []);
+
+      // Mini Timeline Navigation
+      const MiniTimeline = () => (
+        <div style={{
+          position: 'fixed',
+          right: '20px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          zIndex: 100,
+          display: viewMode === 'vertical' ? 'flex' : 'none',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: '16px 10px',
+          background: colors.white,
+          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.12)',
+          border: `1px solid ${colors.gray300}`
+        }}>
+          <div style={{
+            fontSize: '9px',
+            fontWeight: '600',
+            color: colors.petroleum500,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            marginBottom: '12px',
+            writingMode: 'vertical-rl',
+            transform: 'rotate(180deg)'
+          }}>
+            Tidslinje
+          </div>
+
+          {timelineData.map((item, index) => (
+            <Fragment key={item.id}>
+              <button
+                onClick={() => scrollToItem(index)}
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+                style={{
+                  width: '10px',
+                  height: '10px',
+                  borderRadius: '50%',
+                  border: item.status === 'current'
+                    ? `2px solid ${colors.orange500}`
+                    : activeIndex === index
+                    ? `2px solid ${colors.petroleum500}`
+                    : 'none',
+                  background: item.status === 'current'
+                    ? colors.white
+                    : activeIndex === index
+                    ? colors.white
+                    : getStatusColor(item.status),
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  transform: hoveredIndex === index ? 'scale(1.3)' : 'scale(1)',
+                  position: 'relative',
+                  outline: activeIndex === index
+                    ? `2px solid ${item.status === 'current' ? colors.orange200 : colors.petroleum200}`
+                    : 'none',
+                  outlineOffset: '2px'
+                }}
+                title={item.title}
+              >
+                {hoveredIndex === index && (
+                  <div style={{
+                    position: 'absolute',
+                    right: '20px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: colors.gray900,
+                    color: colors.white,
+                    padding: '6px 10px',
+                    fontSize: '11px',
+                    fontWeight: '500',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {item.title}
+                  </div>
+                )}
+              </button>
+              {index < timelineData.length - 1 && (
+                <div style={{
+                  width: '2px',
+                  height: '16px',
+                  background: index < currentItemIndex
+                    ? colors.petroleum500
+                    : index === currentItemIndex
+                    ? `linear-gradient(180deg, ${colors.orange500} 0%, ${colors.gray300} 100%)`
+                    : colors.gray300
+                }} />
+              )}
+            </Fragment>
+          ))}
+
+          <div style={{
+            marginTop: '12px',
+            fontSize: '9px',
+            color: colors.gray700,
+            textAlign: 'center'
+          }}>
+            <div style={{
+              width: '10px',
+              height: '10px',
+              borderRadius: '50%',
+              border: `2px solid ${colors.orange500}`,
+              background: colors.white,
+              margin: '0 auto 4px'
+            }} />
+            <div>I dag</div>
+          </div>
+        </div>
+      );
+
+      // Vertical Timeline
+      const VerticalTimeline = () => (
+        <div style={{ position: 'relative', padding: '40px 0', maxWidth: '900px', margin: '0 auto' }}>
+          <div style={{
+            position: 'absolute',
+            left: '50%',
+            top: '0',
+            bottom: '0',
+            width: '2px',
+            background: `linear-gradient(180deg, ${colors.gray800} 0%, ${colors.gray800} 72%, ${colors.gray300} 80%, ${colors.gray300} 100%)`,
+            transform: 'translateX(-50%)'
+          }} />
+
+          {timelineData.map((item, index) => {
+            const isLeft = index % 2 === 0;
+
+            return (
+              <div
+                key={item.id}
+                ref={el => itemRefs.current[index] = el}
+                style={{
+                  display: 'flex',
+                  justifyContent: isLeft ? 'flex-start' : 'flex-end',
+                  position: 'relative',
+                  marginBottom: '48px',
+                  opacity: item.status === 'upcoming' ? 0.6 : 1
+                }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: item.image ? '60px' : '24px',
+                  transform: 'translateX(-50%)',
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '50%',
+                  background: item.status === 'current' ? colors.white : getStatusColor(item.status, item.accentColor),
+                  border: item.status === 'current' ? `2px solid ${colors.orange500}` : `3px solid ${colors.white}`,
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                  zIndex: 10
+                }} />
+
+                <div style={{
+                  width: 'calc(50% - 48px)',
+                  background: colors.white,
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                  border: `1px solid ${colors.gray300}`,
+                  transition: 'all 0.2s ease',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.12)'}
+                onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)'}
+                >
+                  {item.image && (
+                    <div style={{
+                      width: '100%',
+                      height: '140px',
+                      background: `url(${item.image}) center center / cover no-repeat`,
+                      borderBottom: `1px solid ${colors.gray200}`
+                    }} />
+                  )}
+
+                  <div style={{
+                    position: 'absolute',
+                    top: item.image ? '140px' : 0,
+                    [isLeft ? 'right' : 'left']: 0,
+                    width: '4px',
+                    height: item.image ? 'calc(100% - 140px)' : '100%',
+                    background: getStatusColor(item.status, item.accentColor)
+                  }} />
+
+                  <div style={{ padding: '20px 24px' }}>
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '4px 10px',
+                      background: getStatusBg(item.status, item.accentColor),
+                      color: item.accentColor === 'pink' ? colors.pink500 : colors.petroleum800,
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      marginBottom: '12px'
+                    }}>
+                      <span>{item.month ? `${item.month} ${item.date}` : item.date}</span>
+                    </div>
+
+                    {item.status === 'current' && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '16px',
+                        right: '16px',
+                        padding: '3px 8px',
+                        background: colors.orange500,
+                        border: 'none',
+                        color: colors.white,
+                        fontSize: '10px',
+                        fontWeight: '600',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em'
+                      }}>
+                        I gang
+                      </div>
+                    )}
+
+                    <h3 style={{
+                      margin: '0 0 4px 0',
+                      fontSize: '17px',
+                      fontWeight: '700',
+                      color: colors.black
+                    }}>
+                      {item.title}
+                    </h3>
+
+                    <p style={{
+                      margin: '0 0 10px 0',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: getStatusColor(item.status, item.accentColor),
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.03em'
+                    }}>
+                      {item.subtitle}
+                    </p>
+
+                    <p style={{
+                      margin: 0,
+                      fontSize: '14px',
+                      lineHeight: '1.55',
+                      color: colors.gray800
+                    }}>
+                      {item.description}
+                    </p>
+
+                    {item.link && (
+                      <a
+                        href={item.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          marginTop: '16px',
+                          padding: '8px 14px',
+                          background: getStatusColor(item.status, item.accentColor),
+                          color: colors.white,
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          textDecoration: 'none',
+                          transition: 'background 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = item.accentColor === 'pink' ? '#c2185b' : colors.petroleum800}
+                        onMouseLeave={(e) => e.currentTarget.style.background = getStatusColor(item.status, item.accentColor)}
+                      >
+                        {item.linkText}
+                        <span>→</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* Connector line from card to dot */}
+                <div style={{
+                  position: 'absolute',
+                  top: item.image ? '65px' : '29px',
+                  left: isLeft ? 'calc(50% - 48px)' : '50%',
+                  width: '48px',
+                  height: '2px',
+                  background: item.status === 'current' ? colors.orange500 : getStatusColor(item.status, item.accentColor)
+                }} />
+              </div>
+            );
+          })}
+        </div>
+      );
+
+      // Horizontal Timeline
+      const HorizontalTimeline = () => {
+        const [currentSlide, setCurrentSlide] = useState(currentItemIndex);
+        const nextSlide = () => setCurrentSlide(prev => Math.min(prev + 1, timelineData.length - 1));
+        const prevSlide = () => setCurrentSlide(prev => Math.max(prev - 1, 0));
+
+        return (
+          <div style={{ maxWidth: '900px', margin: '0 auto', padding: '24px 0' }}>
+            <div style={{
+              position: 'relative',
+              height: '4px',
+              background: colors.gray300,
+              marginBottom: '24px'
+            }}>
+              <div style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                height: '100%',
+                width: `${((currentSlide + 1) / timelineData.length) * 100}%`,
+                background: colors.petroleum500,
+                transition: 'width 0.4s ease'
+              }} />
+            </div>
+
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginBottom: '32px',
+              padding: '0 8px'
+            }}>
+              {timelineData.map((item, index) => (
+                <button
+                  key={item.id}
+                  onClick={() => setCurrentSlide(index)}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    opacity: currentSlide === index ? 1 : 0.4,
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <div style={{
+                    width: item.status === 'current' ? '12px' : '10px',
+                    height: item.status === 'current' ? '12px' : '10px',
+                    borderRadius: '50%',
+                    background: item.status === 'current' ? colors.white : (currentSlide === index ? getStatusColor(item.status) : colors.gray400),
+                    border: item.status === 'current' ? `2px solid ${colors.orange500}` : 'none',
+                    transition: 'all 0.2s ease'
+                  }} />
+                  <span style={{
+                    fontSize: '10px',
+                    fontWeight: '600',
+                    color: currentSlide === index ? colors.black : colors.gray600,
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {item.date}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div style={{ overflow: 'hidden' }}>
+              <div style={{
+                display: 'flex',
+                transition: 'transform 0.4s ease',
+                transform: `translateX(-${currentSlide * 100}%)`
+              }}>
+                {timelineData.map((item) => (
+                  <div key={item.id} style={{ minWidth: '100%', padding: '0 8px', boxSizing: 'border-box' }}>
+                    <div style={{
+                      display: 'flex',
+                      background: colors.white,
+                      border: `1px solid ${colors.gray300}`,
+                      minHeight: '280px',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}>
+                      {item.status === 'current' && (
+                        <div style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '4px',
+                          height: '100%',
+                          background: colors.orange500
+                        }} />
+                      )}
+
+                      {item.image ? (
+                        <div style={{
+                          width: '40%',
+                          minHeight: '280px',
+                          background: `url(${item.image}) center center / cover no-repeat`
+                        }} />
+                      ) : (
+                        <div style={{
+                          width: '40%',
+                          minHeight: '280px',
+                          background: getStatusBg(item.status),
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '64px',
+                          opacity: 0.3
+                        }}>
+                          {item.icon}
+                        </div>
+                      )}
+
+                      <div style={{
+                        width: '60%',
+                        padding: '32px 36px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center'
+                      }}>
+                        <div style={{
+                          position: 'absolute',
+                          top: '20px',
+                          right: '24px',
+                          padding: '5px 12px',
+                          background: item.status === 'current' ? colors.orange500
+                            : item.status === 'completed' ? colors.petroleum500
+                            : colors.gray600,
+                          border: 'none',
+                          color: colors.white,
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.04em'
+                        }}>
+                          {item.status === 'current' ? 'I gang'
+                            : item.status === 'completed' ? '✓ Afsluttet'
+                            : 'Kommende'}
+                        </div>
+
+                        <div style={{
+                          marginBottom: '14px'
+                        }}>
+                          <span style={{
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            color: getStatusColor(item.status),
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em'
+                          }}>
+                            {item.month ? `${item.month} ${item.date}` : item.date}
+                          </span>
+                        </div>
+
+                        <h2 style={{
+                          margin: '0 0 6px 0',
+                          fontSize: '26px',
+                          fontWeight: '700',
+                          color: colors.black
+                        }}>
+                          {item.title}
+                        </h2>
+
+                        <p style={{
+                          margin: '0 0 12px 0',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: getStatusColor(item.status),
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.03em'
+                        }}>
+                          {item.subtitle}
+                        </p>
+
+                        <p style={{
+                          margin: 0,
+                          fontSize: '15px',
+                          lineHeight: '1.6',
+                          color: colors.gray800
+                        }}>
+                          {item.description}
+                        </p>
+
+                        {item.link && (
+                          <a
+                            href={item.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              marginTop: '20px',
+                              padding: '10px 18px',
+                              background: colors.petroleum500,
+                              color: colors.white,
+                              fontSize: '14px',
+                              fontWeight: '600',
+                              textDecoration: 'none',
+                              alignSelf: 'flex-start',
+                              transition: 'background 0.2s ease'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = colors.petroleum800}
+                            onMouseLeave={(e) => e.currentTarget.style.background = colors.petroleum500}
+                          >
+                            {item.linkText}
+                            <span>→</span>
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '16px',
+              marginTop: '28px'
+            }}>
+              <button
+                onClick={prevSlide}
+                disabled={currentSlide === 0}
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  border: 'none',
+                  background: currentSlide === 0 ? colors.gray200 : colors.petroleum500,
+                  color: currentSlide === 0 ? colors.gray600 : colors.white,
+                  cursor: currentSlide === 0 ? 'not-allowed' : 'pointer',
+                  fontSize: '20px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                ←
+              </button>
+
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                color: colors.gray700,
+                fontSize: '14px',
+                fontWeight: '500'
+              }}>
+                <span style={{ fontWeight: '700', color: colors.black }}>{currentSlide + 1}</span>
+                <span>/</span>
+                <span>{timelineData.length}</span>
+              </div>
+
+              <button
+                onClick={nextSlide}
+                disabled={currentSlide === timelineData.length - 1}
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  border: 'none',
+                  background: currentSlide === timelineData.length - 1 ? colors.gray200 : colors.petroleum500,
+                  color: currentSlide === timelineData.length - 1 ? colors.gray600 : colors.white,
+                  cursor: currentSlide === timelineData.length - 1 ? 'not-allowed' : 'pointer',
+                  fontSize: '20px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                →
+              </button>
+            </div>
+          </div>
+        );
+      };
+
+      return (
+        <div style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif', background: colors.white }}>
+          <style>{`
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            a { text-decoration: none; }
+            a:hover { text-decoration: underline; }
+          `}</style>
+
+          {/* Header - exact match to deltag.aarhus.dk */}
+          <header style={{
+            position: 'relative',
+            zIndex: 10,
+            background: colors.white
+          }}>
+            {/* Top bar with secondary nav */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              padding: '10px 40px',
+              gap: '24px',
+              fontSize: '14px'
+            }}>
+              <a href="https://aarhus.dk/borgerinddragelse" style={{ color: colors.black, textDecoration: 'none' }}>
+                Om inddragelse i byudvikling
+              </a>
+              <a href="/nyhedsbrev" style={{ color: colors.black, textDecoration: 'none' }}>
+                Nyhedsbrev
+              </a>
+            </div>
+
+            {/* Main navigation bar */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 40px 20px'
+            }}>
+              {/* Logo */}
+              <a href="/" style={{ display: 'block' }}>
+                <img
+                  src={images.logo}
+                  alt="Aarhus Kommune"
+                  style={{ height: '50px', width: 'auto' }}
+                />
+              </a>
+
+              {/* Primary navigation */}
+              <nav style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
+                <a href="/hoering" style={{ color: colors.black, fontSize: '16px', fontWeight: '500', textDecoration: 'none' }}>
+                  Høringer
+                </a>
+                <a href="/begivenheder" style={{ color: colors.black, fontSize: '16px', fontWeight: '500', textDecoration: 'none' }}>
+                  Begivenheder
+                </a>
+                <a href="/borgerforslag" style={{ color: colors.black, fontSize: '16px', fontWeight: '500', textDecoration: 'none' }}>
+                  Borgerforslag
+                </a>
+                <a href="/afgoerelser" style={{ color: colors.black, fontSize: '16px', fontWeight: '500', textDecoration: 'none' }}>
+                  Afgørelser <span style={{ fontSize: '12px', fontWeight: '400' }}>(ny)</span>
+                </a>
+                <a href="/dialogforum" style={{ color: colors.black, fontSize: '16px', fontWeight: '500', textDecoration: 'none' }}>
+                  Dialogforum <span style={{ fontSize: '12px', fontWeight: '400' }}>(ny)</span>
+                </a>
+                <a href="/projektsider" style={{ color: colors.black, fontSize: '16px', fontWeight: '500', textDecoration: 'none' }}>
+                  Projektsider
+                </a>
+                <a href="/search" style={{ color: colors.petroleum500, textDecoration: 'none', marginLeft: '8px' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.35-4.35"/>
+                  </svg>
+                </a>
+              </nav>
+            </div>
+          </header>
+
+          {/* Hero section with overlapping content card */}
+          <div style={{ position: 'relative' }}>
+            {/* Hero image */}
+            <div style={{
+              width: '100%',
+              height: '380px',
+              background: `url(${images.hero}) center center / cover no-repeat`
+            }} />
+
+            {/* Content card overlapping the hero */}
+            <div style={{
+              position: 'relative',
+              maxWidth: '1100px',
+              margin: '-120px auto 0',
+              padding: '0 40px'
+            }}>
+              <div style={{
+                background: colors.peach100,
+                padding: '48px 56px 56px'
+              }}>
+                <div style={{
+                  fontSize: '14px',
+                  color: colors.gray800,
+                  marginBottom: '16px'
+                }}>
+                  Udviklingsprojekter
+                </div>
+
+                <h1 style={{
+                  fontSize: '42px',
+                  fontWeight: '700',
+                  color: colors.black,
+                  margin: '0 0 28px 0',
+                  lineHeight: '1.15'
+                }}>
+                  Stationspladsen i Hjortshøj
+                </h1>
+
+                <div style={{
+                  fontSize: '17px',
+                  lineHeight: '1.7',
+                  color: colors.black,
+                  maxWidth: '680px'
+                }}>
+                  <p style={{ margin: '0 0 20px 0' }}>
+                    I 2023 blev Hjortshøj Stationsplads udpeget som et af 13 byrum i Aarhus Kommunes Strategiske Byrumsplan, og i 2025 gik startskuddet til, at vi i Teknik og Miljø kunne gå i gang med en proces om omdannelse af Stationspladsen i Hjortshøj.
+                  </p>
+                  <p style={{ margin: 0 }}>
+                    På baggrund af dette, har vi i løbet af 2025 kørt en borgerdialog, som skal være fundament for at udarbejde et forslag til omdannelse af stationspladsen.
+                  </p>
+                </div>
+
+                <div style={{
+                  marginTop: '40px',
+                  fontSize: '15px',
+                  color: colors.gray800
+                }}>
+                  Hjortshøj
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main content */}
+          <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '48px 40px' }}>
+            {/* Status section */}
+            <section style={{ marginBottom: '48px' }}>
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: '700',
+                color: colors.black,
+                margin: '0 0 20px 0'
+              }}>
+                Status
+              </h2>
+              <div style={{ display: 'flex', gap: '40px', alignItems: 'flex-start' }}>
+                <div style={{ flex: '1', fontSize: '16px', lineHeight: '1.75', color: colors.gray800 }}>
+                  <p style={{ margin: '0 0 16px 0' }}>
+                    I foråret 2025 påbegyndte vi dialogen med fællesrådet (Hjortshøj Landsbyforum) - en god gåtur på Stationspladsen og et efterfølgende møde om stedets identitet og potentialer har været afsættet til en bredere dialog i Hjortshøj.
+                  </p>
+                  <p style={{ margin: '0 0 16px 0' }}>
+                    I august 2025 havde vi en rigtig god formiddag sammen med skoleelever fra Virupskolen samt efterfølgende 'pop-up og kaffe' på Stationspladsen, hvor vi fik rigtig mange gode input med os hjem - både fra et børne- og unge perspektiv, men også fra det brede lokale borgerperspektiv.
+                  </p>
+                  <p style={{ margin: '0 0 16px 0' }}>
+                    Vi har efterfølgende samlet sammen på de mange gode input, vi har fået på tværs af dialogerne, og her ud fra skabt nogle opsamlende temaer. Disse temaer har været sat i spil i en digital dialog, hvor der i september 2025 har været mulighed for at berige og kvalificere de identificerede temaer, samt komme med supplerende nye input.
+                  </p>
+                  <p style={{ margin: '0 0 16px 0' }}>
+                    Vi siger mange tak for de rigtig mange gode input!
+                  </p>
+                  <p style={{ margin: 0 }}>
+                    Nu tager vi de mange input med os videre som fundament for udarbejdelse af et forslag til omdannelsen af Hjortshøj Stationsplads.
+                  </p>
+                </div>
+                <div style={{
+                  flexShrink: 0,
+                  width: '280px',
+                  background: colors.petroleum100,
+                  padding: '24px 28px',
+                  fontSize: '15px',
+                  color: colors.gray800,
+                  lineHeight: '1.6'
+                }}>
+                  <div style={{ color: colors.petroleum500, marginBottom: '8px' }}>Teknik og Miljø</div>
+                  <div style={{ fontWeight: '700', color: colors.black, marginBottom: '12px' }}>Medborgerskab</div>
+                  <div>E-mail: <a href="mailto:medborgerskab@mtm.aarhus.dk" style={{ color: colors.petroleum500 }}>medborgerskab@mtm.aarhus.dk</a></div>
+                </div>
+              </div>
+            </section>
+
+            {/* TIMELINE SECTION */}
+            <section style={{ marginBottom: '48px' }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '20px',
+                flexWrap: 'wrap',
+                gap: '16px'
+              }}>
+                <h2 style={{
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  color: colors.black,
+                  margin: 0
+                }}>
+                  Projektets tidslinje
+                </h2>
+
+                <div style={{
+                  display: 'inline-flex',
+                  background: colors.gray100,
+                  padding: '4px'
+                }}>
+                  <button
+                    onClick={() => setViewMode('vertical')}
+                    style={{
+                      padding: '8px 16px',
+                      border: 'none',
+                      background: viewMode === 'vertical' ? colors.petroleum500 : 'transparent',
+                      color: viewMode === 'vertical' ? colors.white : colors.gray800,
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      transition: 'all 0.2s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    ↕ Vertikal
+                  </button>
+                  <button
+                    onClick={() => setViewMode('horizontal')}
+                    style={{
+                      padding: '8px 16px',
+                      border: 'none',
+                      background: viewMode === 'horizontal' ? colors.petroleum500 : 'transparent',
+                      color: viewMode === 'horizontal' ? colors.white : colors.gray800,
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      transition: 'all 0.2s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    ↔ Horisontal
+                  </button>
+                </div>
+              </div>
+
+              <p style={{
+                fontSize: '16px',
+                color: colors.gray700,
+                marginBottom: '24px',
+                maxWidth: '600px'
+              }}>
+                Følg med i inddragelsesprocessen og se hvordan dit input former fremtidens stationsplads.
+              </p>
+
+              {viewMode === 'horizontal' && (
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 14px',
+                  background: colors.gray100,
+                  border: `1px solid ${colors.gray300}`,
+                  marginBottom: '24px'
+                }}>
+                  <div style={{
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '50%',
+                    border: `2px solid ${colors.orange500}`,
+                    background: colors.white
+                  }} />
+                  <span style={{ fontSize: '13px', color: colors.gray800 }}>
+                    <strong>Dags dato:</strong> {new Date().toLocaleDateString('da-DK', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </span>
+                </div>
+              )}
+
+              {viewMode === 'vertical' ? <VerticalTimeline /> : <HorizontalTimeline />}
+
+              <div style={{
+                maxWidth: '500px',
+                margin: '32px auto 0',
+                padding: '20px 24px',
+                background: colors.gray100
+              }}>
+                <h3 style={{
+                  margin: '0 0 14px 0',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  color: colors.black,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em'
+                }}>
+                  Forklaring
+                </h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: colors.petroleum500 }} />
+                    <span style={{ fontSize: '13px', color: colors.gray800 }}>Afsluttet</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '50%',
+                      background: colors.white,
+                      border: `2px solid ${colors.orange500}`
+                    }} />
+                    <span style={{ fontSize: '13px', color: colors.gray800 }}>I gang nu</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: colors.gray600 }} />
+                    <span style={{ fontSize: '13px', color: colors.gray800 }}>Kommende</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Strategisk byrumsplan section */}
+            <section style={{
+              background: colors.petroleum100,
+              padding: '32px 40px'
+            }}>
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: '700',
+                color: colors.black,
+                margin: '0 0 16px 0'
+              }}>
+                Strategisk byrumsplan
+              </h2>
+              <p style={{
+                fontSize: '16px',
+                fontWeight: '700',
+                color: colors.black,
+                margin: '0 0 4px 0'
+              }}>
+                Aarhus giver rum til liv
+              </p>
+              <p style={{
+                fontSize: '16px',
+                fontWeight: '700',
+                color: colors.black,
+                margin: '0 0 16px 0'
+              }}>
+                Strategisk byrumsplan for flere og bedre byrum i Aarhus
+              </p>
+              <p style={{
+                fontSize: '15px',
+                lineHeight: '1.65',
+                color: colors.gray800,
+                margin: '0 0 16px 0'
+              }}>
+                Udarbejdet af Teknik og Miljø som grundlag for udvikling af byrum i Aarhus.
+              </p>
+              <p style={{
+                fontSize: '15px',
+                lineHeight: '1.7',
+                color: colors.gray800,
+                margin: '0 0 16px 0',
+                fontStyle: 'italic'
+              }}>
+                "Smukke omgivelser giver en helt grundlæggende glæde. Det skal vi have meget mere af i Aarhus. De nye byrum skal være en udvidet dagligstue i det fri, hvor vi har lyst til at slå os ned, nyde området og mødes med dem, vi holder af. Jeg har udpeget 13 steder, som kan blive til hjertet i vores bykvarterer, forstæder og opland, og som løfter byrådets visioner for Aarhus", siger Nicolaj Bang, rådmand for Teknik og Miljø.
+              </p>
+              <p style={{
+                fontSize: '14px',
+                color: colors.gray700,
+                margin: '0 0 16px 0'
+              }}>
+                Vedtaget 2023.
+              </p>
+              <a href="https://aarhus.dk/nyt/teknik-og-miljoe/2023/august-2023/raadmand-vil-puste-nyt-liv-i-13-af-byens-rum" style={{
+                fontSize: '15px',
+                color: colors.petroleum500
+              }}>
+                Læs mere her: Rådmand vil puste nyt liv i 13 af byens rum
+              </a>
+            </section>
+          </main>
+
+          {/* Footer */}
+          <footer style={{
+            background: colors.gray900,
+            color: colors.white,
+            padding: '48px 40px',
+            marginTop: '64px'
+          }}>
+            <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <h4 style={{
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  margin: '0 0 16px 0',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em'
+                }}>
+                  AARHUS KOMMUNE
+                </h4>
+                <div style={{ fontSize: '14px', color: '#999', lineHeight: '1.7' }}>
+                  Hack Kampmanns Plads 2<br />
+                  8000 Aarhus C<br /><br />
+                  TLF. 89 40 22 22
+                </div>
+              </div>
+              <div>
+                <img
+                  src={images.logoWhite}
+                  alt="Aarhus Kommune"
+                  style={{ height: '48px', width: 'auto', opacity: 0.7 }}
+                />
+              </div>
+            </div>
+            <div style={{
+              maxWidth: '1100px',
+              margin: '32px auto 0',
+              paddingTop: '24px',
+              borderTop: '1px solid #555',
+              display: 'flex',
+              gap: '24px'
+            }}>
+              <a href="https://www.was.digst.dk/deltag-aarhus-dk" style={{ fontSize: '13px', color: '#999', textDecoration: 'none' }}>
+                Webtilgængelighedserklæring
+              </a>
+              <a href="http://adgangforalle.dk/" style={{ fontSize: '13px', color: '#999', textDecoration: 'none' }}>
+                Læs højt
+              </a>
+            </div>
+          </footer>
+
+          <MiniTimeline />
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<DeltagAarhusProjectPage />);
+  </script>
+</body>
+</html>
