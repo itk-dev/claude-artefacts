@@ -41,6 +41,9 @@
         black: '#333',
         orange500: '#ff5f31',
         orange200: '#ffcfc1',
+        pink500: '#e91e63',
+        pink200: '#f8bbd9',
+        pink100: '#fce4ec',
       };
 
       // Using placeholder images - in production these would be actual URLs
@@ -97,7 +100,8 @@
           icon: '🎨',
           image: images.workshop,
           link: `${baseUrl}/public_meeting/1298`,
-          linkText: 'Se workshoppen'
+          linkText: 'Se workshoppen',
+          accentColor: 'pink'
         },
         {
           id: 4,
@@ -173,7 +177,8 @@
 
       const currentItemIndex = timelineData.findIndex(item => item.status === 'current');
 
-      const getStatusColor = (status) => {
+      const getStatusColor = (status, accentColor) => {
+        if (accentColor === 'pink') return colors.pink500;
         switch (status) {
           case 'completed': return colors.petroleum500;
           case 'current': return colors.orange500;
@@ -182,7 +187,8 @@
         }
       };
 
-      const getStatusBg = (status) => {
+      const getStatusBg = (status, accentColor) => {
+        if (accentColor === 'pink') return colors.pink100;
         switch (status) {
           case 'completed': return colors.petroleum100;
           case 'current': return colors.gray100;
@@ -198,8 +204,33 @@
         }
       };
 
+      // Track which timeline item is visible on scroll
       useEffect(() => {
-        setTimeout(() => scrollToItem(currentItemIndex), 500);
+        const handleScroll = () => {
+          const viewportCenter = window.innerHeight / 2;
+          let closestIndex = null;
+          let closestDistance = Infinity;
+
+          itemRefs.current.forEach((ref, index) => {
+            if (ref) {
+              const rect = ref.getBoundingClientRect();
+              const itemCenter = rect.top + rect.height / 2;
+              const distance = Math.abs(itemCenter - viewportCenter);
+
+              if (distance < closestDistance) {
+                closestDistance = distance;
+                closestIndex = index;
+              }
+            }
+          });
+
+          if (closestIndex !== null && closestDistance < window.innerHeight) {
+            setActiveIndex(closestIndex);
+          }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
       }, []);
 
       // Mini Timeline Navigation
@@ -238,15 +269,27 @@
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}
                 style={{
-                  width: item.status === 'current' ? '12px' : '10px',
-                  height: item.status === 'current' ? '12px' : '10px',
+                  width: '10px',
+                  height: '10px',
                   borderRadius: '50%',
-                  border: item.status === 'current' ? `2px solid ${colors.orange500}` : 'none',
-                  background: item.status === 'current' ? colors.white : getStatusColor(item.status),
+                  border: item.status === 'current'
+                    ? `2px solid ${colors.orange500}`
+                    : activeIndex === index
+                    ? `2px solid ${colors.petroleum500}`
+                    : 'none',
+                  background: item.status === 'current'
+                    ? colors.white
+                    : activeIndex === index
+                    ? colors.white
+                    : getStatusColor(item.status),
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                   transform: hoveredIndex === index ? 'scale(1.3)' : 'scale(1)',
-                  position: 'relative'
+                  position: 'relative',
+                  outline: activeIndex === index
+                    ? `2px solid ${item.status === 'current' ? colors.orange200 : colors.petroleum200}`
+                    : 'none',
+                  outlineOffset: '2px'
                 }}
                 title={item.title}
               >
@@ -309,7 +352,7 @@
             top: '0',
             bottom: '0',
             width: '2px',
-            background: `linear-gradient(180deg, ${colors.petroleum500} 0%, ${colors.petroleum500} 55%, ${colors.gray300} 65%, ${colors.gray300} 100%)`,
+            background: `linear-gradient(180deg, ${colors.gray800} 0%, ${colors.gray800} 72%, ${colors.gray300} 80%, ${colors.gray300} 100%)`,
             transform: 'translateX(-50%)'
           }} />
 
@@ -336,7 +379,7 @@
                   width: '12px',
                   height: '12px',
                   borderRadius: '50%',
-                  background: item.status === 'current' ? colors.white : getStatusColor(item.status),
+                  background: item.status === 'current' ? colors.white : getStatusColor(item.status, item.accentColor),
                   border: item.status === 'current' ? `2px solid ${colors.orange500}` : `3px solid ${colors.white}`,
                   boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
                   zIndex: 10
@@ -369,7 +412,7 @@
                     [isLeft ? 'right' : 'left']: 0,
                     width: '4px',
                     height: item.image ? 'calc(100% - 140px)' : '100%',
-                    background: getStatusColor(item.status)
+                    background: getStatusColor(item.status, item.accentColor)
                   }} />
 
                   <div style={{ padding: '20px 24px' }}>
@@ -378,13 +421,12 @@
                       alignItems: 'center',
                       gap: '6px',
                       padding: '4px 10px',
-                      background: getStatusBg(item.status),
-                      color: colors.petroleum800,
+                      background: getStatusBg(item.status, item.accentColor),
+                      color: item.accentColor === 'pink' ? colors.pink500 : colors.petroleum800,
                       fontSize: '12px',
                       fontWeight: '600',
                       marginBottom: '12px'
                     }}>
-                      <span>{item.icon}</span>
                       <span>{item.month ? `${item.month} ${item.date}` : item.date}</span>
                     </div>
 
@@ -394,9 +436,9 @@
                         top: '16px',
                         right: '16px',
                         padding: '3px 8px',
-                        background: colors.gray100,
-                        border: `1px solid ${colors.orange500}`,
-                        color: colors.gray800,
+                        background: colors.orange500,
+                        border: 'none',
+                        color: colors.white,
                         fontSize: '10px',
                         fontWeight: '600',
                         textTransform: 'uppercase',
@@ -419,7 +461,7 @@
                       margin: '0 0 10px 0',
                       fontSize: '12px',
                       fontWeight: '600',
-                      color: getStatusColor(item.status),
+                      color: getStatusColor(item.status, item.accentColor),
                       textTransform: 'uppercase',
                       letterSpacing: '0.03em'
                     }}>
@@ -446,32 +488,32 @@
                           gap: '6px',
                           marginTop: '16px',
                           padding: '8px 14px',
-                          background: colors.petroleum500,
+                          background: getStatusColor(item.status, item.accentColor),
                           color: colors.white,
                           fontSize: '13px',
                           fontWeight: '600',
                           textDecoration: 'none',
                           transition: 'background 0.2s ease'
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = colors.petroleum800}
-                        onMouseLeave={(e) => e.currentTarget.style.background = colors.petroleum500}
+                        onMouseEnter={(e) => e.currentTarget.style.background = item.accentColor === 'pink' ? '#c2185b' : colors.petroleum800}
+                        onMouseLeave={(e) => e.currentTarget.style.background = getStatusColor(item.status, item.accentColor)}
                       >
                         {item.linkText}
                         <span>→</span>
                       </a>
                     )}
                   </div>
-
-                  <div style={{
-                    position: 'absolute',
-                    top: item.image ? '60px' : '32px',
-                    [isLeft ? 'right' : 'left']: '-24px',
-                    width: '24px',
-                    height: '2px',
-                    background: getStatusColor(item.status),
-                    opacity: 0.4
-                  }} />
                 </div>
+
+                {/* Connector line from card to dot */}
+                <div style={{
+                  position: 'absolute',
+                  top: item.image ? '65px' : '29px',
+                  left: isLeft ? 'calc(50% - 48px)' : '50%',
+                  width: '48px',
+                  height: '2px',
+                  background: item.status === 'current' ? colors.orange500 : getStatusColor(item.status, item.accentColor)
+                }} />
               </div>
             );
           })}
@@ -605,11 +647,11 @@
                           top: '20px',
                           right: '24px',
                           padding: '5px 12px',
-                          background: item.status === 'current' ? colors.gray100
+                          background: item.status === 'current' ? colors.orange500
                             : item.status === 'completed' ? colors.petroleum500
                             : colors.gray600,
-                          border: item.status === 'current' ? `1px solid ${colors.orange500}` : 'none',
-                          color: item.status === 'current' ? colors.gray800 : colors.white,
+                          border: 'none',
+                          color: colors.white,
                           fontSize: '11px',
                           fontWeight: '600',
                           textTransform: 'uppercase',
@@ -621,12 +663,8 @@
                         </div>
 
                         <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
                           marginBottom: '14px'
                         }}>
-                          <span style={{ fontSize: '26px' }}>{item.icon}</span>
                           <span style={{
                             fontSize: '13px',
                             fontWeight: '600',
@@ -899,11 +937,7 @@
           {/* Main content */}
           <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '48px 40px' }}>
             {/* Status section */}
-            <section style={{
-              background: colors.gray100,
-              padding: '32px 40px',
-              marginBottom: '48px'
-            }}>
+            <section style={{ marginBottom: '48px' }}>
               <h2 style={{
                 fontSize: '24px',
                 fontWeight: '700',
@@ -912,27 +946,37 @@
               }}>
                 Status
               </h2>
-              <div style={{ fontSize: '16px', lineHeight: '1.75', color: colors.gray800 }}>
-                <p style={{ margin: '0 0 16px 0' }}>
-                  I foråret 2025 påbegyndte vi dialogen med fællesrådet (Hjortshøj Landsbyforum) - en god gåtur på Stationspladsen og et efterfølgende møde om stedets identitet og potentialer har været afsættet til en bredere dialog i Hjortshøj.
-                </p>
-                <p style={{ margin: '0 0 16px 0' }}>
-                  I august 2025 havde vi en rigtig god formiddag sammen med skoleelever fra Virupskolen samt efterfølgende 'pop-up og kaffe' på Stationspladsen, hvor vi fik rigtig mange gode input med os hjem - både fra et børne- og unge perspektiv, men også fra det brede lokale borgerperspektiv.
-                </p>
-                <p style={{ margin: '0 0 16px 0' }}>
-                  Vi har efterfølgende samlet sammen på de mange gode input, vi har fået på tværs af dialogerne, og her ud fra skabt nogle opsamlende temaer. Disse temaer har været sat i spil i en digital dialog, hvor der i september 2025 har været mulighed for at berige og kvalificere de identificerede temaer, samt komme med supplerende nye input.
-                </p>
-                <p style={{ margin: '0 0 16px 0' }}>
-                  Vi siger mange tak for de rigtig mange gode input!
-                </p>
-                <p style={{ margin: 0 }}>
-                  Nu tager vi de mange input med os videre som fundament for udarbejdelse af et forslag til omdannelsen af Hjortshøj Stationsplads.
-                </p>
-              </div>
-              <div style={{ marginTop: '28px', fontSize: '15px', color: colors.gray800, lineHeight: '1.6' }}>
-                <strong style={{ color: colors.black }}>Teknik og Miljø</strong><br />
-                Medborgerskab<br />
-                E-mail: <a href="mailto:medborgerskab@mtm.aarhus.dk" style={{ color: colors.petroleum500 }}>medborgerskab@mtm.aarhus.dk</a>
+              <div style={{ display: 'flex', gap: '40px', alignItems: 'flex-start' }}>
+                <div style={{ flex: '1', fontSize: '16px', lineHeight: '1.75', color: colors.gray800 }}>
+                  <p style={{ margin: '0 0 16px 0' }}>
+                    I foråret 2025 påbegyndte vi dialogen med fællesrådet (Hjortshøj Landsbyforum) - en god gåtur på Stationspladsen og et efterfølgende møde om stedets identitet og potentialer har været afsættet til en bredere dialog i Hjortshøj.
+                  </p>
+                  <p style={{ margin: '0 0 16px 0' }}>
+                    I august 2025 havde vi en rigtig god formiddag sammen med skoleelever fra Virupskolen samt efterfølgende 'pop-up og kaffe' på Stationspladsen, hvor vi fik rigtig mange gode input med os hjem - både fra et børne- og unge perspektiv, men også fra det brede lokale borgerperspektiv.
+                  </p>
+                  <p style={{ margin: '0 0 16px 0' }}>
+                    Vi har efterfølgende samlet sammen på de mange gode input, vi har fået på tværs af dialogerne, og her ud fra skabt nogle opsamlende temaer. Disse temaer har været sat i spil i en digital dialog, hvor der i september 2025 har været mulighed for at berige og kvalificere de identificerede temaer, samt komme med supplerende nye input.
+                  </p>
+                  <p style={{ margin: '0 0 16px 0' }}>
+                    Vi siger mange tak for de rigtig mange gode input!
+                  </p>
+                  <p style={{ margin: 0 }}>
+                    Nu tager vi de mange input med os videre som fundament for udarbejdelse af et forslag til omdannelsen af Hjortshøj Stationsplads.
+                  </p>
+                </div>
+                <div style={{
+                  flexShrink: 0,
+                  width: '280px',
+                  background: colors.petroleum100,
+                  padding: '24px 28px',
+                  fontSize: '15px',
+                  color: colors.gray800,
+                  lineHeight: '1.6'
+                }}>
+                  <div style={{ color: colors.petroleum500, marginBottom: '8px' }}>Teknik og Miljø</div>
+                  <div style={{ fontWeight: '700', color: colors.black, marginBottom: '12px' }}>Medborgerskab</div>
+                  <div>E-mail: <a href="mailto:medborgerskab@mtm.aarhus.dk" style={{ color: colors.petroleum500 }}>medborgerskab@mtm.aarhus.dk</a></div>
+                </div>
               </div>
             </section>
 
