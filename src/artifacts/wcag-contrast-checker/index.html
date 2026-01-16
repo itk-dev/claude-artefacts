@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WCAG Contrast Checker</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.min.js"></script>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+    const { Download, CheckCircle, XCircle, AlertCircle, X, Upload, TestTube2, ChevronDown, ChevronUp, Plus, Trash2, ChevronRight, Settings } = lucideReact;
+
+    const ContrastChecker = () => {
+      const [results, setResults] = useState([]);
+      const [editingColor, setEditingColor] = useState(null);
+      const [customColors, setCustomColors] = useState({});
+      const [colorData, setColorData] = useState(null);
+      const [isInitialState, setIsInitialState] = useState(true);
+      const [showStandards, setShowStandards] = useState(false);
+      const [manualColors, setManualColors] = useState([]);
+      const [isManualMode, setIsManualMode] = useState(false);
+      const [duplicateError, setDuplicateError] = useState(null);
+      const [isFromManualInput, setIsFromManualInput] = useState(false);
+      const [expandedRows, setExpandedRows] = useState(new Set());
+      const [nuanceStepSize, setNuanceStepSize] = useState(10);
+      const [editingNuance, setEditingNuance] = useState(null);
+
+      const testColorData = [
+        { name: 'Aarhus', primary: ['#297f78', '#ffffff'], secondary: ['#fbd800', '#000000'], tertiary: ['#40362e', '#ffffff'] },
+        { name: 'Aalborg', primary: ['#224430', '#fff'], secondary: ['#5cc4b7', '#000'], tertiary: ['#3A3A3C', '#ffffff'] },
+        { name: 'Viborg', primary: ['#004036', '#fff'], secondary: ['#6cbe9d', '#000'], tertiary: ['#cc3A48', '#fff'] },
+        { name: 'Randers', primary: ['#1B365D', '#fff'], secondary: ['#49C5B1', '#000'], tertiary: null },
+        { name: 'Skive', primary: ['#0c2951', '#fff'], secondary: ['#e6e4da', '#0c2951'], tertiary: ['#4a8311', '#fff'] },
+        { name: 'Thisted', primary: ['#84a6b8', '#212121'], secondary: ['#86b0a6', '#000'], tertiary: ['#94b5c5', '#000'] },
+        { name: 'Esbjerg', primary: ['#0C4168', '#fff'], secondary: ['#C44052', '#fff'], tertiary: ['#006838', '#fff'] },
+        { name: 'Vejle', primary: ['#57256e', '#fff'], secondary: ['#d1e8e1', '#000'], tertiary: ['#F5AA35', '#000'] },
+        { name: 'Aarhus-EP', primary: ['#4C687D', '#fff'], secondary: ['#63887f', '#fff'], tertiary: ['#5C4F43', '#fff'] }
+      ];
+
+      const hexToRgb = (hex) => {
+        hex = hex.replace('#', '').toLowerCase();
+        if (hex.length === 3) {
+          hex = hex.split('').map(c => c + c).join('');
+        }
+        if (hex.length === 6) {
+          return {
+            r: parseInt(hex.substr(0, 2), 16),
+            g: parseInt(hex.substr(2, 2), 16),
+            b: parseInt(hex.substr(4, 2), 16)
+          };
+        }
+        return null;
+      };
+
+      const rgbToHex = (r, g, b) => {
+        return '#' + [r, g, b].map(x => {
+          const hex = Math.round(x).toString(16);
+          return hex.length === 1 ? '0' + hex : hex;
+        }).join('');
+      };
+
+      const adjustBrightness = (hex, percent) => {
+        const rgb = hexToRgb(hex);
+        if (!rgb) return hex;
+        const factor = percent / 100;
+        let { r, g, b } = rgb;
+        if (factor > 0) {
+          r = r + (255 - r) * factor;
+          g = g + (255 - g) * factor;
+          b = b + (255 - b) * factor;
+        } else {
+          r = r + r * factor;
+          g = g + g * factor;
+          b = b + b * factor;
+        }
+        return rgbToHex(r, g, b);
+      };
+
+      const getLuminance = (r, g, b) => {
+        const [rs, gs, bs] = [r, g, b].map(c => {
+          c = c / 255;
+          return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+        });
+        return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+      };
+
+      const getContrastRatio = (color1, color2) => {
+        const rgb1 = hexToRgb(color1);
+        const rgb2 = hexToRgb(color2);
+        if (!rgb1 || !rgb2) return null;
+        const lum1 = getLuminance(rgb1.r, rgb1.g, rgb1.b);
+        const lum2 = getLuminance(rgb2.r, rgb2.g, rgb2.b);
+        const lighter = Math.max(lum1, lum2);
+        const darker = Math.min(lum1, lum2);
+        return (lighter + 0.05) / (darker + 0.05);
+      };
+
+      const checkCompliance = (ratio) => {
+        return {
+          aa_normal: ratio >= 4.5,
+          aa_large: ratio >= 3,
+          aaa_normal: ratio >= 7,
+          aaa_large: ratio >= 4.5
+        };
+      };
+
+      const getColorKey = (name, type, position) => {
+        return `${name}-${type}-${position}`;
+      };
+
+      const getColor = (name, type, position, originalColor) => {
+        const key = getColorKey(name, type, position);
+        return customColors[key] || originalColor;
+      };
+
+      const parseCSV = (csvText) => {
+        const lines = csvText.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+        const data = [];
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+          if (values.length >= 4) {
+            const name = values[0];
+            const existingItem = data.find(d => d.name === name);
+            if (existingItem) {
+              if (values[1].toLowerCase().includes('secondary')) {
+                existingItem.secondary = [values[2], values[3]];
+              } else if (values[1].toLowerCase().includes('tertiary')) {
+                existingItem.tertiary = [values[2], values[3]];
+              }
+            } else {
+              data.push({
+                name: name,
+                primary: [values[2], values[3]],
+                secondary: null,
+                tertiary: null
+              });
+            }
+          }
+        }
+        return data;
+      };
+
+      const handleFileUpload = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              const csvData = parseCSV(e.target.result);
+              setColorData(csvData);
+              setIsInitialState(false);
+              setCustomColors({});
+            } catch (error) {
+              alert('Error parsing CSV file. Please ensure it follows the correct format.');
+            }
+          };
+          reader.readAsText(file);
+        }
+      };
+
+      const downloadTemplate = () => {
+        const headers = ['Name', 'Color Set', 'Background', 'Foreground', 'Contrast Ratio', 'WCAG AA Normal', 'WCAG AA Large', 'WCAG AAA Normal', 'WCAG AAA Large'];
+        const exampleRows = [
+          ['Example City', 'Primary', '#297f78', '#ffffff', '', '', '', '', ''],
+          ['Example City', 'Secondary', '#fbd800', '#000000', '', '', '', '', ''],
+          ['Example City', 'Tertiary', '#40362e', '#ffffff', '', '', '', '', '']
+        ];
+        const csvContent = [
+          headers.join(','),
+          ...exampleRows.map(row => row.map(cell => `"${cell}"`).join(','))
+        ].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'wcag_template.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      };
+
+      const loadTestData = () => {
+        setColorData(testColorData);
+        setIsInitialState(false);
+        setIsManualMode(false);
+        setIsFromManualInput(false);
+        setCustomColors({});
+      };
+
+      const startManualMode = () => {
+        setManualColors([{ id: Date.now(), name: '', background: '', foreground: '' }]);
+        setIsManualMode(true);
+        setIsInitialState(false);
+      };
+
+      const editManualColors = () => {
+        const converted = [];
+        colorData.forEach((item) => {
+          if (item.primary && item.primary[0] && item.primary[1]) {
+            converted.push({ id: Date.now() + converted.length, name: item.name, background: item.primary[0], foreground: item.primary[1] });
+          }
+          if (item.secondary && item.secondary[0] && item.secondary[1]) {
+            converted.push({ id: Date.now() + converted.length, name: `${item.name} Secondary`, background: item.secondary[0], foreground: item.secondary[1] });
+          }
+          if (item.tertiary && item.tertiary[0] && item.tertiary[1]) {
+            converted.push({ id: Date.now() + converted.length, name: `${item.name} Tertiary`, background: item.tertiary[0], foreground: item.tertiary[1] });
+          }
+        });
+        setManualColors(converted);
+        setIsManualMode(true);
+      };
+
+      const addManualColor = () => {
+        setManualColors([...manualColors, { id: Date.now(), name: '', background: '', foreground: '' }]);
+      };
+
+      const removeManualColor = (id) => {
+        setManualColors(manualColors.filter(c => c.id !== id));
+      };
+
+      const updateManualColor = (id, field, value) => {
+        setManualColors(manualColors.map(c => c.id === id ? { ...c, [field]: value } : c));
+      };
+
+      const normalizeHexColor = (hex) => {
+        if (!hex) return hex;
+        hex = hex.trim();
+        if (hex && !hex.startsWith('#')) {
+          hex = '#' + hex;
+        }
+        return hex;
+      };
+
+      const handleColorBlur = (id, field) => {
+        const color = manualColors.find(c => c.id === id);
+        if (color && color[field]) {
+          const normalized = normalizeHexColor(color[field]);
+          if (normalized !== color[field]) {
+            updateManualColor(id, field, normalized);
+          }
+        }
+      };
+
+      const validateAndAnalyze = () => {
+        const hasEmptyName = manualColors.some(c => !c.name.trim());
+        if (hasEmptyName) {
+          alert('Please provide a name for all colors before analyzing.');
+          return;
+        }
+        const filledColors = manualColors.map(c => ({
+          ...c,
+          background: c.background.trim() || '#ffffff',
+          foreground: c.foreground.trim() || '#000000'
+        }));
+        const hasInvalidHex = filledColors.some(c => {
+          const bgValid = hexToRgb(c.background);
+          const fgValid = hexToRgb(c.foreground);
+          return !bgValid || !fgValid;
+        });
+        if (hasInvalidHex) {
+          alert('Please enter valid hex colors (e.g., #ffffff or #fff).');
+          return;
+        }
+        const names = filledColors.map(c => c.name.trim().toLowerCase());
+        const seenNames = new Set();
+        let duplicateName = null;
+        for (const name of names) {
+          if (seenNames.has(name)) {
+            duplicateName = name;
+            break;
+          }
+          seenNames.add(name);
+        }
+        if (duplicateName) {
+          const originalName = filledColors.find(c => c.name.trim().toLowerCase() === duplicateName).name;
+          const count = names.filter(n => n === duplicateName).length;
+          const suggestedName = `${originalName} ${count}`;
+          setDuplicateError({ original: originalName, suggested: suggestedName });
+          return;
+        }
+        const converted = filledColors.map(c => ({
+          name: c.name.trim(),
+          primary: [c.background, c.foreground],
+          secondary: null,
+          tertiary: null
+        }));
+        setColorData(converted);
+        setIsManualMode(false);
+        setIsFromManualInput(true);
+        setCustomColors({});
+      };
+
+      const acceptSuggestion = () => {
+        const duplicate = manualColors.find(c => c.name.trim() === duplicateError.original);
+        updateManualColor(duplicate.id, 'name', duplicateError.suggested);
+        setDuplicateError(null);
+      };
+
+      const toggleRowExpansion = (rowKey) => {
+        const newExpanded = new Set(expandedRows);
+        if (newExpanded.has(rowKey)) {
+          newExpanded.delete(rowKey);
+        } else {
+          newExpanded.add(rowKey);
+        }
+        setExpandedRows(newExpanded);
+      };
+
+      const generateNuances = (result) => {
+        const nuances = [];
+        const steps = [-50, -40, -30, -20, -10, 10, 20, 30, 40, 50];
+        const filteredSteps = steps.filter(step => Math.abs(step) % nuanceStepSize === 0);
+        filteredSteps.forEach(step => {
+          const adjustedBg = adjustBrightness(result.originalBackground, step);
+          const ratio = getContrastRatio(adjustedBg, result.foreground);
+          const compliance = checkCompliance(ratio);
+          nuances.push({ type: 'background', step, background: adjustedBg, foreground: result.foreground, ratio: ratio ? ratio.toFixed(2) : 'N/A', ...compliance });
+        });
+        filteredSteps.forEach(step => {
+          const adjustedFg = adjustBrightness(result.originalForeground, step);
+          const ratio = getContrastRatio(result.background, adjustedFg);
+          const compliance = checkCompliance(ratio);
+          nuances.push({ type: 'foreground', step, background: result.background, foreground: adjustedFg, ratio: ratio ? ratio.toFixed(2) : 'N/A', ...compliance });
+        });
+        return nuances;
+      };
+
+      const calculateResults = () => {
+        if (!colorData) return [];
+        const calculatedResults = [];
+        colorData.forEach(({ name, primary, secondary, tertiary }) => {
+          ['primary', 'secondary', 'tertiary'].forEach((type) => {
+            const colors = type === 'primary' ? primary : type === 'secondary' ? secondary : tertiary;
+            if (colors && colors[0] && colors[1]) {
+              const typeCapitalized = type.charAt(0).toUpperCase() + type.slice(1);
+              const bgKey = getColorKey(name, typeCapitalized, 'bg');
+              const fgKey = getColorKey(name, typeCapitalized, 'fg');
+              const bg = customColors[bgKey] || colors[0];
+              const fg = customColors[fgKey] || colors[1];
+              const ratio = getContrastRatio(bg, fg);
+              const compliance = checkCompliance(ratio);
+              calculatedResults.push({
+                name, type: typeCapitalized, background: bg, foreground: fg,
+                originalBackground: colors[0], originalForeground: colors[1],
+                ratio: ratio ? ratio.toFixed(2) : 'N/A',
+                aa_normal: compliance.aa_normal, aa_large: compliance.aa_large,
+                aaa_normal: compliance.aaa_normal, aaa_large: compliance.aaa_large
+              });
+            }
+          });
+        });
+        return calculatedResults;
+      };
+
+      useEffect(() => {
+        const newResults = calculateResults();
+        setResults([...newResults]);
+      }, [colorData, customColors]);
+
+      const calculateBrightnessFromColors = (originalHex, adjustedHex) => {
+        const origRgb = hexToRgb(originalHex);
+        const adjRgb = hexToRgb(adjustedHex);
+        if (!origRgb || !adjRgb) return 0;
+        const origAvg = (origRgb.r + origRgb.g + origRgb.b) / 3;
+        const adjAvg = (adjRgb.r + adjRgb.g + adjRgb.b) / 3;
+        if (adjAvg > origAvg) {
+          return ((adjAvg - origAvg) / (255 - origAvg)) * 100;
+        } else if (adjAvg < origAvg) {
+          return ((adjAvg - origAvg) / origAvg) * 100;
+        }
+        return 0;
+      };
+
+      const handleColorClick = (name, type, position, currentColor, originalColor) => {
+        const key = getColorKey(name, type, position);
+        const storedColor = customColors[key];
+        const colorToUse = storedColor || originalColor;
+        const brightness = storedColor ? calculateBrightnessFromColors(originalColor, storedColor) : 0;
+        setEditingColor({ name, type, position, color: colorToUse, originalColor, brightness: Math.round(brightness) });
+      };
+
+      const handleBrightnessChange = (value) => {
+        const newBrightness = parseFloat(value);
+        const newColor = adjustBrightness(editingColor.originalColor, newBrightness);
+        setEditingColor({ ...editingColor, brightness: newBrightness, color: newColor });
+      };
+
+      const applyColorChange = () => {
+        const key = getColorKey(editingColor.name, editingColor.type, editingColor.position);
+        if (editingColor.brightness === 0) {
+          setCustomColors(prev => { const newColors = { ...prev }; delete newColors[key]; return newColors; });
+        } else {
+          setCustomColors(prev => ({ ...prev, [key]: editingColor.color }));
+        }
+        setEditingColor(null);
+      };
+
+      const resetColor = () => {
+        const key = getColorKey(editingColor.name, editingColor.type, editingColor.position);
+        setCustomColors(prev => { const newColors = { ...prev }; delete newColors[key]; return newColors; });
+        setEditingColor(null);
+      };
+
+      const downloadCSV = () => {
+        const headers = ['Name', 'Color Set', 'Background', 'Foreground', 'Contrast Ratio', 'WCAG AA Normal', 'WCAG AA Large', 'WCAG AAA Normal', 'WCAG AAA Large'];
+        const csvRows = results.map(r => [
+          `"${r.name}"`, `"${r.type}"`, `"${r.background}"`, `"${r.foreground}"`, `"${r.ratio}"`,
+          r.aa_normal ? 'Pass' : 'Fail', r.aa_large ? 'Pass' : 'Fail',
+          r.aaa_normal ? 'Pass' : 'Fail', r.aaa_large ? 'Pass' : 'Fail'
+        ].join(','));
+        const csvContent = [headers.join(','), ...csvRows].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'wcag_contrast_ratios.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      };
+
+      const ComplianceIcon = ({ pass }) => {
+        if (pass) return <CheckCircle className="w-4 h-4 text-green-600" />;
+        return <XCircle className="w-4 h-4 text-red-600" />;
+      };
+
+      if (isManualMode) {
+        return (
+          <div className="min-h-screen bg-gray-50 p-6">
+            <div className="max-w-5xl mx-auto">
+              <div className="bg-white rounded-lg shadow-lg p-8">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Add Colors Manually</h1>
+                    <p className="text-gray-600">Enter your colors below to analyze their contrast ratios</p>
+                  </div>
+                  <button onClick={() => { setIsManualMode(false); setIsInitialState(true); setManualColors([]); }} className="text-gray-500 hover:text-gray-700">
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase min-w-[150px]">Name</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase min-w-[200px]">Background Color</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase min-w-[200px]">Foreground Color</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase w-20">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {manualColors.map((color) => (
+                        <tr key={color.id}>
+                          <td className="px-4 py-3">
+                            <input type="text" value={color.name} onChange={(e) => updateManualColor(color.id, 'name', e.target.value)} placeholder="e.g., Button Primary" className="w-full min-w-[120px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <input type="color" value={color.background || '#000000'} onChange={(e) => updateManualColor(color.id, 'background', e.target.value)} className="w-10 h-10 rounded border border-gray-300 cursor-pointer flex-shrink-0" />
+                              <input type="text" value={color.background} onChange={(e) => updateManualColor(color.id, 'background', e.target.value)} onBlur={() => handleColorBlur(color.id, 'background')} placeholder="#ffffff" className="flex-1 min-w-[100px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm" />
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <input type="color" value={color.foreground || '#000000'} onChange={(e) => updateManualColor(color.id, 'foreground', e.target.value)} className="w-10 h-10 rounded border border-gray-300 cursor-pointer flex-shrink-0" />
+                              <input type="text" value={color.foreground} onChange={(e) => updateManualColor(color.id, 'foreground', e.target.value)} onBlur={() => handleColorBlur(color.id, 'foreground')} placeholder="#000000" className="flex-1 min-w-[100px] px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm" />
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <button onClick={() => removeManualColor(color.id)} disabled={manualColors.length === 1} className="text-red-600 hover:text-red-700 disabled:text-gray-300 disabled:cursor-not-allowed">
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="flex gap-3 mt-6">
+                  <button onClick={addManualColor} className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                    <Plus className="w-4 h-4" />Add Color
+                  </button>
+                  <button onClick={validateAndAnalyze} className="flex-1 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                    Analyze Colors
+                  </button>
+                </div>
+              </div>
+            </div>
+            {duplicateError && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+                  <div className="flex items-start gap-3 mb-4">
+                    <AlertCircle className="w-6 h-6 text-orange-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">Duplicate Name Detected</h3>
+                      <p className="text-gray-600 text-sm">
+                        The name <strong>"{duplicateError.original}"</strong> already exists. Would you like to use <strong>"{duplicateError.suggested}"</strong> instead?
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => setDuplicateError(null)} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">Go Back</button>
+                    <button onClick={acceptSuggestion} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Use "{duplicateError.suggested}"</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      if (isInitialState) {
+        return (
+          <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+            <div className="max-w-2xl w-full">
+              <div className="bg-white rounded-lg shadow-lg p-8">
+                <div className="text-center mb-8">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">WCAG Contrast Ratio Checker</h1>
+                  <p className="text-gray-600">Analyze color accessibility compliance for your design system</p>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="csv-upload" className="block w-full">
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer">
+                        <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                        <p className="text-lg font-medium text-gray-700 mb-2">Upload CSV File</p>
+                        <p className="text-sm text-gray-500">Click to browse or drag and drop your CSV file here</p>
+                      </div>
+                    </label>
+                    <input id="csv-upload" type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
+                  </div>
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-300"></div></div>
+                    <div className="relative flex justify-center text-sm"><span className="px-4 bg-white text-gray-500">or</span></div>
+                  </div>
+                  <button onClick={startManualMode} className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-4 rounded-lg hover:from-green-700 hover:to-green-800 transition-all shadow-md">
+                    <Plus className="w-5 h-5" /><span className="font-medium">Add Colors Manually</span>
+                  </button>
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-300"></div></div>
+                    <div className="relative flex justify-center text-sm"><span className="px-4 bg-white text-gray-500">or</span></div>
+                  </div>
+                  <button onClick={loadTestData} className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-md">
+                    <TestTube2 className="w-5 h-5" /><span className="font-medium">Show Test Data</span>
+                  </button>
+                </div>
+                <div className="mt-8 bg-gray-50 rounded-lg p-6">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="font-semibold text-gray-900">CSV Format Requirements:</h3>
+                    <button onClick={downloadTemplate} className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium">
+                      <Download className="w-4 h-4" />Download Template
+                    </button>
+                  </div>
+                  <div className="text-sm text-gray-600 space-y-2">
+                    <p>Your CSV should have the following columns:</p>
+                    <code className="block bg-white p-3 rounded border border-gray-200 text-xs overflow-x-auto">Name, Color Set, Background, Foreground, Contrast Ratio, ...</code>
+                    <p className="mt-2">Example row:</p>
+                    <code className="block bg-white p-3 rounded border border-gray-200 text-xs overflow-x-auto">Aarhus, Primary, #297f78, #ffffff, ...</code>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen bg-gray-50 p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">WCAG Contrast Ratio Analysis</h1>
+                  <p className="text-gray-600 mt-1">Color accessibility compliance analysis</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={() => { setIsInitialState(true); setColorData(null); setCustomColors({}); setResults([]); setIsFromManualInput(false); }} className="flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors">
+                    <Upload className="w-4 h-4" />Start New Analysis
+                  </button>
+                  <button onClick={editManualColors} className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    <Plus className="w-4 h-4" />Edit Colors
+                  </button>
+                  <button onClick={downloadCSV} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    <Download className="w-4 h-4" />Download CSV
+                  </button>
+                </div>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg overflow-hidden">
+                <button onClick={() => setShowStandards(!showStandards)} className="w-full flex items-center justify-between p-4 hover:bg-blue-100 transition-colors">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                    <span className="font-semibold text-blue-900">WCAG Compliance Standards</span>
+                  </div>
+                  {showStandards ? <ChevronUp className="w-5 h-5 text-blue-600" /> : <ChevronDown className="w-5 h-5 text-blue-600" />}
+                </button>
+                {showStandards && (
+                  <div className="px-4 pb-4 text-sm text-blue-900">
+                    <ul className="list-disc list-inside space-y-1">
+                      <li><strong>AA Normal:</strong> 4.5:1 (for text smaller than 18pt or 14pt bold)</li>
+                      <li><strong>AA Large:</strong> 3:1 (for text 18pt+ or 14pt+ bold)</li>
+                      <li><strong>AAA Normal:</strong> 7:1 (enhanced for normal text)</li>
+                      <li><strong>AAA Large:</strong> 4.5:1 (enhanced for large text)</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase align-top w-12"></th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase align-top">Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase align-top">Color Set</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase align-top">
+                        <div>Background / Foreground</div>
+                        <div className="text-xs font-normal text-gray-500 normal-case mt-0.5">(Click to adjust)</div>
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase align-top">Ratio</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase align-top">AA Normal</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase align-top">AA Large</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase align-top">AAA Normal</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase align-top">AAA Large</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {results.map((result, index) => {
+                      const rowKey = `${result.name}-${result.type}-${result.background}-${result.foreground}`;
+                      const isExpanded = expandedRows.has(rowKey);
+                      const nuances = isExpanded ? generateNuances(result) : [];
+                      return (
+                        <React.Fragment key={rowKey}>
+                          <tr className="hover:bg-gray-50">
+                            <td className="px-4 py-3">
+                              <button onClick={() => toggleRowExpansion(rowKey)} className="text-gray-500 hover:text-gray-700">
+                                {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                              </button>
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900">{result.name}</td>
+                            <td className="px-4 py-3 text-sm text-gray-600">{result.type}</td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1">
+                                  <button onClick={() => handleColorClick(result.name, result.type, 'bg', result.background, result.originalBackground)} className="w-8 h-8 rounded border-2 border-gray-300 hover:border-blue-500 cursor-pointer transition-all hover:scale-110" style={{ backgroundColor: result.background }} title="Click to adjust brightness" />
+                                  <span className="text-xs text-gray-500">{result.background}</span>
+                                </div>
+                                <span className="text-gray-400">→</span>
+                                <div className="flex items-center gap-1">
+                                  <button onClick={() => handleColorClick(result.name, result.type, 'fg', result.foreground, result.originalForeground)} className="w-8 h-8 rounded border-2 border-gray-300 hover:border-blue-500 cursor-pointer transition-all hover:scale-110" style={{ backgroundColor: result.foreground }} title="Click to adjust brightness" />
+                                  <span className="text-xs text-gray-500">{result.foreground}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-center"><span className="text-sm font-semibold text-gray-900">{result.ratio}:1</span></td>
+                            <td className="px-4 py-3 text-center"><div className="flex justify-center"><ComplianceIcon pass={result.aa_normal} /></div></td>
+                            <td className="px-4 py-3 text-center"><div className="flex justify-center"><ComplianceIcon pass={result.aa_large} /></div></td>
+                            <td className="px-4 py-3 text-center"><div className="flex justify-center"><ComplianceIcon pass={result.aaa_normal} /></div></td>
+                            <td className="px-4 py-3 text-center"><div className="flex justify-center"><ComplianceIcon pass={result.aaa_large} /></div></td>
+                          </tr>
+                          {isExpanded && (
+                            <>
+                              <tr className="bg-blue-50">
+                                <td colSpan="9" className="px-4 py-2"><div className="text-xs font-semibold text-blue-900 uppercase">Background Nuances</div></td>
+                              </tr>
+                              {nuances.filter(n => n.type === 'background').map((nuance, nIdx) => (
+                                <tr key={`bg-${nIdx}`} className="bg-blue-50 hover:bg-blue-100">
+                                  <td className="px-4 py-2"></td>
+                                  <td className="px-4 py-2 text-sm text-gray-600" colSpan="2"><span className="ml-4">BG {nuance.step > 0 ? '+' : ''}{nuance.step}%</span></td>
+                                  <td className="px-4 py-2">
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-1">
+                                        <button onClick={() => handleColorClick(result.name, result.type, 'bg', nuance.background, result.originalBackground)} className="w-8 h-8 rounded border-2 border-gray-300 hover:border-blue-500 cursor-pointer transition-all hover:scale-110" style={{ backgroundColor: nuance.background }} title="Click to adjust brightness" />
+                                        <span className="text-xs text-gray-500">{nuance.background}</span>
+                                      </div>
+                                      <span className="text-gray-400">→</span>
+                                      <div className="flex items-center gap-1">
+                                        <div className="w-8 h-8 rounded border-2 border-gray-300" style={{ backgroundColor: nuance.foreground }} />
+                                        <span className="text-xs text-gray-500">{nuance.foreground}</span>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-2 text-center"><span className="text-sm font-semibold text-gray-900">{nuance.ratio}:1</span></td>
+                                  <td className="px-4 py-2 text-center"><div className="flex justify-center"><ComplianceIcon pass={nuance.aa_normal} /></div></td>
+                                  <td className="px-4 py-2 text-center"><div className="flex justify-center"><ComplianceIcon pass={nuance.aa_large} /></div></td>
+                                  <td className="px-4 py-2 text-center"><div className="flex justify-center"><ComplianceIcon pass={nuance.aaa_normal} /></div></td>
+                                  <td className="px-4 py-2 text-center"><div className="flex justify-center"><ComplianceIcon pass={nuance.aaa_large} /></div></td>
+                                </tr>
+                              ))}
+                              <tr className="bg-green-50">
+                                <td colSpan="9" className="px-4 py-2"><div className="text-xs font-semibold text-green-900 uppercase">Foreground Nuances</div></td>
+                              </tr>
+                              {nuances.filter(n => n.type === 'foreground').map((nuance, nIdx) => (
+                                <tr key={`fg-${nIdx}`} className="bg-green-50 hover:bg-green-100">
+                                  <td className="px-4 py-2"></td>
+                                  <td className="px-4 py-2 text-sm text-gray-600" colSpan="2"><span className="ml-4">FG {nuance.step > 0 ? '+' : ''}{nuance.step}%</span></td>
+                                  <td className="px-4 py-2">
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-1">
+                                        <div className="w-8 h-8 rounded border-2 border-gray-300" style={{ backgroundColor: nuance.background }} />
+                                        <span className="text-xs text-gray-500">{nuance.background}</span>
+                                      </div>
+                                      <span className="text-gray-400">→</span>
+                                      <div className="flex items-center gap-1">
+                                        <button onClick={() => handleColorClick(result.name, result.type, 'fg', nuance.foreground, result.originalForeground)} className="w-8 h-8 rounded border-2 border-gray-300 hover:border-blue-500 cursor-pointer transition-all hover:scale-110" style={{ backgroundColor: nuance.foreground }} title="Click to adjust brightness" />
+                                        <span className="text-xs text-gray-500">{nuance.foreground}</span>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-2 text-center"><span className="text-sm font-semibold text-gray-900">{nuance.ratio}:1</span></td>
+                                  <td className="px-4 py-2 text-center"><div className="flex justify-center"><ComplianceIcon pass={nuance.aa_normal} /></div></td>
+                                  <td className="px-4 py-2 text-center"><div className="flex justify-center"><ComplianceIcon pass={nuance.aa_large} /></div></td>
+                                  <td className="px-4 py-2 text-center"><div className="flex justify-center"><ComplianceIcon pass={nuance.aaa_normal} /></div></td>
+                                  <td className="px-4 py-2 text-center"><div className="flex justify-center"><ComplianceIcon pass={nuance.aaa_large} /></div></td>
+                                </tr>
+                              ))}
+                            </>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {editingColor && (() => {
+            const result = results.find(r => r.name === editingColor.name && r.type === editingColor.type);
+            const isEditingBackground = editingColor.position === 'bg';
+            const currentBg = isEditingBackground ? editingColor.color : result?.background;
+            const currentFg = isEditingBackground ? result?.foreground : editingColor.color;
+            const originalBg = isEditingBackground ? editingColor.originalColor : result?.originalBackground;
+            const originalFg = isEditingBackground ? result?.originalForeground : editingColor.originalColor;
+            const currentRatio = getContrastRatio(currentBg, currentFg);
+            const originalRatio = getContrastRatio(originalBg, originalFg);
+            return (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold text-gray-900">Adjust Color Brightness</h3>
+                    <button onClick={() => setEditingColor(null)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+                  </div>
+                  <div className="space-y-4">
+                    <div><p className="text-sm text-gray-600 mb-2"><strong>{editingColor.name}</strong> - {editingColor.type} - {editingColor.position === 'bg' ? 'Background' : 'Foreground'}</p></div>
+                    <div>
+                      <div className="flex items-center justify-center gap-4 mb-3">
+                        <div className="text-center">
+                          <div className="w-20 h-20 rounded border-2 border-gray-300 flex items-center justify-center relative" style={{ backgroundColor: originalBg }}>
+                            <span className="text-4xl font-bold" style={{ color: originalFg }}>A</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">Original</p>
+                        </div>
+                        <div className="text-2xl text-gray-400">→</div>
+                        <div className="text-center">
+                          <div className="w-20 h-20 rounded border-2 border-blue-500 flex items-center justify-center relative" style={{ backgroundColor: currentBg }}>
+                            <span className="text-4xl font-bold" style={{ color: currentFg }}>A</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">Adjusted</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 text-center">
+                        <div className="bg-gray-50 rounded p-2">
+                          <p className="text-xs text-gray-500 mb-1">Original Ratio</p>
+                          <p className="text-lg font-bold text-gray-900">{originalRatio ? originalRatio.toFixed(2) : 'N/A'}:1</p>
+                          <div className="flex justify-center gap-2 mt-1">
+                            <div className="flex items-center gap-0.5">{originalRatio >= 4.5 ? <CheckCircle className="w-3 h-3 text-green-600" /> : <XCircle className="w-3 h-3 text-red-600" />}<span className="text-xs text-gray-600">AA</span></div>
+                            <div className="flex items-center gap-0.5">{originalRatio >= 7 ? <CheckCircle className="w-3 h-3 text-green-600" /> : <XCircle className="w-3 h-3 text-red-600" />}<span className="text-xs text-gray-600">AAA</span></div>
+                          </div>
+                        </div>
+                        <div className="bg-blue-50 rounded p-2">
+                          <p className="text-xs text-blue-600 mb-1">New Ratio</p>
+                          <p className="text-lg font-bold text-blue-900">{currentRatio ? currentRatio.toFixed(2) : 'N/A'}:1</p>
+                          <div className="flex justify-center gap-2 mt-1">
+                            <div className="flex items-center gap-0.5">{currentRatio >= 4.5 ? <CheckCircle className="w-3 h-3 text-green-600" /> : <XCircle className="w-3 h-3 text-red-600" />}<span className="text-xs text-blue-900">AA</span></div>
+                            <div className="flex items-center gap-0.5">{currentRatio >= 7 ? <CheckCircle className="w-3 h-3 text-green-600" /> : <XCircle className="w-3 h-3 text-red-600" />}<span className="text-xs text-blue-900">AAA</span></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Brightness: {editingColor.brightness > 0 ? '+' : ''}{editingColor.brightness}%</label>
+                      <input type="range" min="-100" max="100" value={editingColor.brightness} onChange={(e) => handleBrightnessChange(e.target.value)} className="w-full" />
+                      <div className="flex justify-between text-xs text-gray-500 mt-1"><span>Darker</span><span>Lighter</span></div>
+                    </div>
+                    <div className="bg-gray-50 rounded p-3">
+                      <p className="text-sm text-gray-600"><strong>Original:</strong> {editingColor.originalColor}</p>
+                      <p className="text-sm text-gray-600"><strong>Adjusted:</strong> {editingColor.color}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={resetColor} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">Reset</button>
+                      <button onClick={applyColorChange} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Done</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<ContrastChecker />);
+  </script>
+</body>
+</html>

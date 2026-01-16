@@ -1,0 +1,8 @@
+{
+  "name": "WCAG Contrast Checker",
+  "description": "Analyze color accessibility compliance with WCAG standards. Upload CSV, add colors manually, or test with sample data.",
+  "author": "ITK Dev",
+  "created": "2026-01-16",
+  "tags": ["wcag", "accessibility", "contrast", "colors", "a11y"],
+  "thumbnail": ""
+}
