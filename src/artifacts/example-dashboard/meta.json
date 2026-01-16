@@ -4,5 +4,6 @@
   "author": "Claude",
   "created": "2026-01-16",
   "tags": ["dashboard", "charts", "example"],
-  "thumbnail": ""
+  "thumbnail": "",
+  "hidden": true
 }
