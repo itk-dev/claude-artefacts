@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
 const artifactsDir = path.join(rootDir, 'src', 'artifacts');
-const outputFile = path.join(rootDir, 'artifacts-data.js');
+const outputFile = path.join(rootDir, 'public', 'artifacts-data.js');
 
 function buildArtifactsData() {
   const artifacts = [];
@@ -37,6 +37,7 @@ function buildArtifactsData() {
       tags: [],
       created: '',
       thumbnail: '',
+      hidden: false,
     };
 
     if (fs.existsSync(metaPath)) {
@@ -46,6 +47,12 @@ function buildArtifactsData() {
       } catch (e) {
         console.warn(`Warning: Could not parse meta.json for ${slug}`);
       }
+    }
+
+    // Skip hidden artifacts
+    if (meta.hidden) {
+      console.log(`Skipping hidden artifact: ${slug}`);
+      return;
     }
 
     artifacts.push({

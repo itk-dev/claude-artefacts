@@ -4,4 +4,4 @@ dist/
 *.log
 .env
 .env.local
-artifacts-data.js
+public/artifacts-data.js
