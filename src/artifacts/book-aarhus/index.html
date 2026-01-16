@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Aarhus - Ressource Booking</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    @keyframes slide-up { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes slide-down { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes scale-in { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .animate-slide-up { animation: slide-up 0.3s ease-out; }
+    .animate-slide-down { animation: slide-down 0.2s ease-out; }
+    .animate-fade-in { animation: fade-in 0.2s ease-out; }
+    .animate-scale-in { animation: scale-in 0.2s ease-out; }
+  </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { primary: '#2d3e4f' },
+            slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155', 800: '#1e293b' }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script type="text/babel">
+    const { useState, useEffect, createContext, useContext } = React;
+
+    // ============================================================
+    // CONTEXT - App State Management
+    // ============================================================
+    const AppContext = createContext();
+    
+    const useApp = () => useContext(AppContext);
+
+    // ============================================================
+    // DATA - Sample booking data
+    // ============================================================
+    const FAVORITES_DATA = [
+      { id: 1, name: 'Storesal', location: 'Dokk1', date: 'Fre 5. sep', fullDate: 'Fredag 5. september', time: '14:00', image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=100&h=100&fit=crop', capacity: 150, accessibility: 'Adgang m. kørestol, Teleslynge', equipment: 'Projector, Højtalersystem, Trådløs mikofon', address: 'Dokk1, Niveau 1, Hack Kampmanns plads 2, 8000 Aarhus C', description: 'Nulla imperdiet odio eros, eget euismod neque ullamcorper at. Aliquam eu diam in eros hendrerit aliquet.', isFavorite: true },
+      { id: 2, name: 'Lillesal', location: 'Dokk1', date: 'Fre 5. sep', fullDate: 'Fredag 5. september', time: '15:00', image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=100&h=100&fit=crop', capacity: 50, accessibility: 'Adgang m. kørestol', equipment: 'Projector, Whiteboard', address: 'Dokk1, Niveau 2, Hack Kampmanns plads 2, 8000 Aarhus C', description: 'Et stort og lyst lokale med plads til møder og workshops.', isFavorite: true },
+      { id: 3, name: 'Auditoriet', location: 'Blixen', date: 'Fre 5. sep', fullDate: 'Fredag 5. september', time: '14:00', image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=100&h=100&fit=crop', capacity: 200, accessibility: 'Adgang m. kørestol, Teleslynge', equipment: 'Projector, Højtalersystem, Scene', address: 'Karen Blixens Boulevard 7, 8220 Brabrand', description: 'Professionelt auditorium med scene og moderne AV-udstyr.', isFavorite: false },
+    ];
+
+    const POPULAR_DATA = [
+      { id: 4, name: 'Creativa', location: 'Aarhus Art Museum', date: 'Lør 6. sep', fullDate: 'Lørdag 6. september', time: '10:00', image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=100&h=100&fit=crop', capacity: 80, accessibility: 'Adgang m. kørestol', equipment: 'Projector, Kunstbelysning', address: 'Aros Allé 2, 8000 Aarhus C', description: 'Kreativt lokale i hjertet af Aarhus kunstmuseum.', isFavorite: false },
+      { id: 5, name: 'TechZone', location: 'Aarhus University', date: 'Søn 7. sep', fullDate: 'Søndag 7. september', time: '09:00', image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=100&h=100&fit=crop', capacity: 100, accessibility: 'Adgang m. kørestol, Teleslynge', equipment: 'Projector, Smartboard, Video konference', address: 'Nordre Ringgade 1, 8000 Aarhus C', description: 'Moderne teknologilokale med avanceret udstyr.', isFavorite: false },
+      { id: 6, name: 'InnoHub', location: 'VIA University College', date: 'Man 8. sep', fullDate: 'Mandag 8. september', time: '13:00', image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=100&h=100&fit=crop', capacity: 60, accessibility: 'Adgang m. kørestol', equipment: 'Projector, Whiteboard, Video konference', address: 'Chr. M. Østergaards Vej 4, 8700 Horsens', description: 'Innovationshub med fleksible mødefaciliteter.', isFavorite: false },
+    ];
+
+    const FILTER_OPTIONS = {
+      type: ['Mødelokale', 'Sal', 'Undervisningslokale'],
+      facilities: ['Projector', 'Skærm', 'Lydsystem', 'Trådløsmikrofon'],
+      seats: ['1-10', '11-50', '100', '100+'],
+      price: ['Gratis', '0-500', '501-1500', '1501+'],
+      accessibility: ['Adgang m. kørestol', 'Teleslynge']
+    };
+
+    // ============================================================
+    // ICONS - SVG Icon Components
+    // ============================================================
+    const Icons = {
+      Menu: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
+      Close: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+      MapPin: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
+      Calendar: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+      CalendarWeek: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+      Clock: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+      Timer: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12"/></svg>,
+      Sliders: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>,
+      ChevronDown: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>,
+      ChevronUp: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="18 15 12 9 6 15"/></svg>,
+      Star: ({ filled }) => <svg width="20" height="20" viewBox="0 0 24 24" fill={filled ? '#facc15' : 'none'} stroke={filled ? '#facc15' : '#94a3b8'} strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+      Map: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>,
+      CalendarDays: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><rect x="8" y="14" width="3" height="3"/></svg>,
+      Check: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>,
+      Sort: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>,
+    };
+
+    // ============================================================
+    // COMPONENT: MobileHeader
+    // ============================================================
+    const MobileHeader = ({ onMenuClick }) => (
+      <header className="lg:hidden bg-slate-700 h-16 flex items-center justify-between px-4 sticky top-0 z-40">
+        <h1 className="text-2xl font-medium text-white">Booking</h1>
+        <button onClick={onMenuClick} className="text-white p-2">
+          <Icons.Menu />
+        </button>
+      </header>
+    );
+
+    // ============================================================
+    // COMPONENT: DesktopHeader
+    // ============================================================
+    const DesktopHeader = () => (
+      <header className="hidden lg:flex px-20 py-6 items-center justify-between">
+        <h1 className="text-4xl font-medium text-gray-900">Booking</h1>
+        <div className="flex items-center gap-4">
+          <button className="text-blue-600 text-sm font-medium hover:underline">Log ud</button>
+          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium shadow-sm">JP</div>
+        </div>
+      </header>
+    );
+
+    // ============================================================
+    // COMPONENT: NavigationBar
+    // ============================================================
+    const NavigationBar = ({ activeTab, onTabChange }) => {
+      const tabs = ['Find ressourcer', 'Dine bookinger', 'Dine favoritter', 'Samarbejdspartner'];
+      return (
+        <nav className="hidden lg:block mx-20 bg-brand-primary rounded-lg px-6 shadow-md">
+          <div className="flex gap-12">
+            {tabs.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => onTabChange(tab)}
+                className={`py-4 text-base font-medium transition-colors relative ${activeTab === tab ? 'text-gray-300' : 'text-white hover:text-gray-300'}`}
+              >
+                {tab}
+                {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-blue-500 rounded-t" />}
+              </button>
+            ))}
+          </div>
+        </nav>
+      );
+    };
+
+    // ============================================================
+    // COMPONENT: MobileMenu (Drawer)
+    // ============================================================
+    const MobileMenu = ({ isOpen, onClose, activeTab, onTabChange }) => {
+      const tabs = ['Find ressourcer', 'Dine bookinger', 'Dine favoritter', 'Samarbejdspartner'];
+      if (!isOpen) return null;
+      return (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+          <div className="absolute right-0 top-0 h-full w-72 bg-white shadow-xl animate-slide-down">
+            <div className="p-4 border-b flex justify-between items-center">
+              <span className="font-medium">Menu</span>
+              <button onClick={onClose} className="p-2"><Icons.Close /></button>
+            </div>
+            <div className="p-4">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">JP</div>
+                <div>
+                  <p className="font-medium">John Pedersen</p>
+                  <button className="text-blue-600 text-sm">Log ud</button>
+                </div>
+              </div>
+              {tabs.map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => { onTabChange(tab); onClose(); }}
+                  className={`w-full text-left py-3 px-4 rounded-lg mb-1 ${activeTab === tab ? 'bg-blue-50 text-blue-600 font-medium' : 'hover:bg-slate-50'}`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ============================================================
+    // COMPONENT: Checkbox
+    // ============================================================
+    const Checkbox = ({ checked, onChange, label }) => (
+      <label className="flex items-center gap-2 cursor-pointer py-1">
+        <div className={`w-4 h-4 rounded-sm border ${checked ? 'bg-blue-600 border-blue-600' : 'bg-slate-50 border-slate-400'} flex items-center justify-center transition-colors`}>
+          {checked && <Icons.Check />}
+        </div>
+        <span className="text-base text-gray-900">{label}</span>
+      </label>
+    );
+
+    // ============================================================
+    // COMPONENT: OverlayFilters (Alle filtre)
+    // ============================================================
+    const OverlayFilters = ({ isOpen, onClose, filters, onFilterChange }) => {
+      if (!isOpen) return null;
+      return (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 lg:pt-32 px-4">
+          <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md max-h-[80vh] overflow-y-auto animate-scale-in">
+            <div className="sticky top-0 bg-white p-4 border-b flex justify-between items-center">
+              <h3 className="text-xl font-medium text-slate-800">Filtre</h3>
+              <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded"><Icons.Close /></button>
+            </div>
+            <div className="p-4 space-y-5">
+              <div>
+                <h4 className="font-medium text-base text-slate-800 mb-2">Type</h4>
+                <div className="pl-4 space-y-1">
+                  {FILTER_OPTIONS.type.map(opt => (
+                    <Checkbox key={opt} label={opt} checked={filters.type?.includes(opt)} onChange={() => onFilterChange('type', opt)} />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h4 className="font-medium text-base text-slate-800 mb-2">Faciliteter</h4>
+                <div className="pl-4 space-y-1">
+                  {FILTER_OPTIONS.facilities.map(opt => (
+                    <Checkbox key={opt} label={opt} checked={filters.facilities?.includes(opt)} onChange={() => onFilterChange('facilities', opt)} />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h4 className="font-medium text-base text-slate-800 mb-2">Siddepladser</h4>
+                <div className="pl-4 space-y-1">
+                  {FILTER_OPTIONS.seats.map(opt => (
+                    <Checkbox key={opt} label={opt} checked={filters.seats?.includes(opt)} onChange={() => onFilterChange('seats', opt)} />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h4 className="font-medium text-base text-slate-800 mb-2">Pris</h4>
+                <div className="pl-4 space-y-1">
+                  {FILTER_OPTIONS.price.map(opt => (
+                    <Checkbox key={opt} label={opt} checked={filters.price?.includes(opt)} onChange={() => onFilterChange('price', opt)} />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h4 className="font-medium text-base text-slate-800 mb-2">Tilgængelighed</h4>
+                <div className="pl-4 space-y-1">
+                  {FILTER_OPTIONS.accessibility.map(opt => (
+                    <Checkbox key={opt} label={opt} checked={filters.accessibility?.includes(opt)} onChange={() => onFilterChange('accessibility', opt)} />
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="sticky bottom-0 bg-white p-4 border-t">
+              <button onClick={onClose} className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                Anvend filtre
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ============================================================
+    // COMPONENT: OverlayLocation (Hvor vil du booke)
+    // ============================================================
+    const OverlayLocation = ({ isOpen, onClose, onSelect }) => {
+      const suggestions = [
+        { text: 'Find lokaler i dit lokal område ved at indtaste ', bold: 'postnummer', text2: ' eller ', bold2: 'bynavn' },
+        { text: 'Find ', bold: 'folkehuse', text2: ' til sociale begivenheder' },
+        { text: 'Find ', bold: 'auditorier', text2: ' til forelæsninger' },
+        { text: 'Find ', bold: 'sale', text2: ' til store arrangementer' },
+      ];
+      if (!isOpen) return null;
+      return (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 lg:pt-32 px-4">
+          <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-xl animate-scale-in">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="text-xl font-medium text-slate-800">Forslåede lokationer</h3>
+              <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded"><Icons.Close /></button>
+            </div>
+            <div className="p-4 space-y-3">
+              {suggestions.map((s, i) => (
+                <button key={i} onClick={() => { onSelect(s.bold); onClose(); }} className="w-full text-left p-3 bg-slate-50 border border-slate-400 rounded hover:bg-slate-100 transition-colors">
+                  <span className="text-sm text-gray-900">{s.text}<strong>{s.bold}</strong>{s.text2}{s.bold2 && <strong>{s.bold2}</strong>}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ============================================================
+    // COMPONENT: OverlayDatePicker (Calendar/Flexible)
+    // ============================================================
+    const OverlayDatePicker = ({ isOpen, onClose }) => {
+      const [tab, setTab] = useState('flexible');
+      const [duration, setDuration] = useState(null);
+      const [selectedWeeks, setSelectedWeeks] = useState([]);
+      const weeks = [{ num: 37, month: 'Sep' }, { num: 38, month: 'Sep' }, { num: 39, month: 'Sep' }, { num: 40, month: 'Okt' }, { num: 41, month: 'Okt' }];
+      
+      const toggleWeek = (num) => {
+        if (selectedWeeks.includes(num)) setSelectedWeeks(selectedWeeks.filter(w => w !== num));
+        else if (selectedWeeks.length < 3) setSelectedWeeks([...selectedWeeks, num]);
+      };
+      
+      if (!isOpen) return null;
+      return (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 lg:pt-32 px-4">
+          <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-xl animate-scale-in">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="text-xl font-medium text-slate-800">Hvornår vil det passe</h3>
+              <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded"><Icons.Close /></button>
+            </div>
+            <div className="flex border-b border-slate-300">
+              <button onClick={() => setTab('calendar')} className={`flex-1 py-3 text-sm text-center ${tab === 'calendar' ? 'font-semibold text-blue-600 border-b-2 border-blue-600' : 'text-slate-800'}`}>Kalender</button>
+              <button onClick={() => setTab('flexible')} className={`flex-1 py-3 text-sm text-center ${tab === 'flexible' ? 'font-semibold text-blue-600 border-b-2 border-blue-600' : 'text-slate-800'}`}>Jeg er fleksibel</button>
+            </div>
+            <div className="p-4 space-y-4">
+              {tab === 'flexible' ? (
+                <>
+                  <div>
+                    <h4 className="font-medium text-base text-slate-800 mb-3">Hvor lang tid vare dit arrangement?</h4>
+                    <div className="grid grid-cols-3 gap-3">
+                      {['Mindre end 2 timer', '2 til 7 timer', 'En hel dag'].map(d => (
+                        <button key={d} onClick={() => setDuration(d)} className={`p-3 text-sm rounded border ${duration === d ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-slate-400 bg-slate-50 text-slate-800 hover:bg-slate-100'}`}>{d}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-base text-slate-800">Hvilke uger vil passe dig?</h4>
+                    <p className="text-sm text-slate-600 mb-3">Vælg op til 3</p>
+                    <div className="grid grid-cols-5 gap-3">
+                      {weeks.map(w => (
+                        <button key={w.num} onClick={() => toggleWeek(w.num)} className={`p-3 rounded border text-center ${selectedWeeks.includes(w.num) ? 'border-blue-600 bg-blue-50' : 'border-slate-400 bg-slate-50 hover:bg-slate-100'}`}>
+                          <Icons.CalendarWeek />
+                          <div className="text-lg font-medium text-slate-800">{w.num}</div>
+                          <div className="text-xs text-slate-600">{w.month}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end gap-4 pt-2">
+                    <span className="text-sm text-slate-600">Vælg varighed og uger</span>
+                    <button disabled={!duration || selectedWeeks.length === 0} className={`px-4 py-2 rounded font-medium ${duration && selectedWeeks.length > 0 ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-300 text-slate-500 cursor-not-allowed'}`}>Søg med disse valg</button>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8 text-slate-500">Kalender visning kommer snart...</div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ============================================================
+    // COMPONENT: FilterDropdown (Small dropdowns)
+    // ============================================================
+    const FilterDropdown = ({ label, options }) => {
+      const [isOpen, setIsOpen] = useState(false);
+      return (
+        <div className="relative">
+          <button onClick={() => setIsOpen(!isOpen)} className="flex items-center gap-2 px-4 py-1.5 bg-white border border-slate-400 rounded text-sm font-medium text-slate-800 hover:bg-slate-50 transition-colors">
+            <span>{label}</span>
+            <Icons.ChevronDown />
+          </button>
+          {isOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+              <div className="absolute top-full left-0 mt-1 bg-white border border-slate-300 rounded-lg shadow-lg z-20 min-w-[160px] animate-fade-in overflow-hidden">
+                {options.map((opt, i) => (
+                  <button key={i} onClick={() => setIsOpen(false)} className="w-full px-4 py-2.5 text-left text-sm hover:bg-blue-50 hover:text-blue-600 transition-colors">{opt}</button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      );
+    };
+
+    // ============================================================
+    // COMPONENT: SearchWrapper
+    // ============================================================
+    const SearchWrapper = ({ onLocationClick, onDateClick, onFiltersClick }) => (
+      <section className="mx-4 lg:mx-20 mt-0 lg:mt-5 bg-white border border-slate-200 lg:rounded-lg p-4 lg:p-5 shadow-sm">
+        {/* Category Selector */}
+        <div className="mb-3">
+          <button className="inline-flex items-center gap-2 px-4 py-2 hover:bg-slate-50 rounded transition-colors">
+            <span className="text-sm font-medium text-slate-800">Lokaler</span>
+            <Icons.ChevronDown />
+          </button>
+        </div>
+        
+        {/* Primary Search Fields */}
+        <div className="flex flex-col lg:flex-row gap-3 mb-3">
+          <button onClick={onLocationClick} className="flex-1 flex items-center gap-3 px-4 py-3 bg-white border border-slate-400 rounded-lg hover:border-slate-500 transition-colors text-left">
+            <span className="text-slate-500"><Icons.MapPin /></span>
+            <span className="font-medium text-slate-800">Hvor vil du booke?</span>
+          </button>
+          
+          <div className="flex">
+            <button onClick={onDateClick} className="flex-1 lg:flex-none flex items-center gap-3 px-4 py-3 bg-white border border-slate-400 lg:border-r-0 rounded-l-lg hover:bg-slate-50 transition-colors lg:min-w-[170px]">
+              <span className="text-slate-500"><Icons.Calendar /></span>
+              <span className="text-slate-800">fre, 5 sep</span>
+            </button>
+            <button onClick={onDateClick} className="flex-1 lg:flex-none flex items-center gap-3 px-4 py-3 bg-white border border-slate-400 rounded-r-lg hover:bg-slate-50 transition-colors lg:min-w-[150px]">
+              <span className="text-slate-800">fre, 5 sep</span>
+            </button>
+          </div>
+          
+          <div className="flex gap-3">
+            <button className="flex-1 lg:flex-none flex items-center gap-3 px-4 py-3 bg-white border border-slate-400 rounded-lg hover:bg-slate-50 transition-colors lg:w-[130px]">
+              <span className="text-slate-500"><Icons.Clock /></span>
+              <span className="text-slate-800">14:00</span>
+            </button>
+            <button className="flex-1 lg:flex-none flex items-center gap-3 px-4 py-3 bg-white border border-slate-400 rounded-lg hover:bg-slate-50 transition-colors lg:w-[130px]">
+              <span className="text-slate-500"><Icons.Timer /></span>
+              <span className="text-slate-800">1 time</span>
+            </button>
+          </div>
+        </div>
+        
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-3">
+          <button onClick={onFiltersClick} className="flex items-center gap-2 px-4 py-2 text-blue-600 font-semibold text-sm hover:bg-blue-50 rounded-lg transition-colors">
+            <Icons.Sliders />
+            <span>Alle filtre</span>
+          </button>
+          <div className="hidden lg:flex flex-wrap gap-2">
+            <FilterDropdown label="Type" options={FILTER_OPTIONS.type} />
+            <FilterDropdown label="Faciliteter" options={FILTER_OPTIONS.facilities} />
+            <FilterDropdown label="Siddepladser" options={FILTER_OPTIONS.seats} />
+            <FilterDropdown label="Pris" options={FILTER_OPTIONS.price} />
+            <FilterDropdown label="Tilgængelighed" options={FILTER_OPTIONS.accessibility} />
+          </div>
+          <div className="lg:hidden">
+            <FilterDropdown label="Type" options={FILTER_OPTIONS.type} />
+          </div>
+        </div>
+      </section>
+    );
+
+    // ============================================================
+    // COMPONENT: SectionHeader
+    // ============================================================
+    const SectionHeader = ({ title, subtitle }) => (
+      <div className="flex flex-wrap items-start justify-between mb-2">
+        <div>
+          <h2 className="text-xl font-medium text-gray-900">{title}</h2>
+          <p className="text-sm text-gray-600">{subtitle}</p>
+        </div>
+        <button className="flex items-center gap-2 text-blue-600 font-semibold text-sm hover:underline">
+          <span>Sorteret efter bedste match</span>
+          <Icons.Sort />
+        </button>
+      </div>
+    );
+
+    // ============================================================
+    // COMPONENT: ResultRowDesktop
+    // ============================================================
+    const ResultRowDesktop = ({ item, isExpanded, onToggle, onBook, onToggleFavorite }) => (
+      <div className={`border-t border-slate-300 first:border-t-0 transition-colors ${isExpanded ? 'bg-white' : 'hover:bg-slate-50'}`}>
+        <div className="flex items-center justify-between px-5 py-4">
+          <div className="flex items-center gap-4">
+            <img src={item.image} alt={item.name} className="w-12 h-12 rounded object-cover bg-gray-200" />
+            <div className="min-w-[130px]">
+              <p className="font-medium text-lg text-gray-900">{item.name}</p>
+              <p className="text-sm text-slate-500">{item.location}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-16 flex-1 px-8">
+            <div className="min-w-[200px]">
+              <p className="font-medium text-lg text-gray-900">{item.fullDate}</p>
+              <p className="text-sm text-slate-500">Bookingdato</p>
+            </div>
+            <div className="min-w-[80px]">
+              <p className="font-medium text-lg text-gray-900">{item.time}</p>
+              <p className="text-sm text-slate-500">Start-tid</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={() => onToggleFavorite(item.id)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+              <Icons.Star filled={item.isFavorite} />
+            </button>
+            <button onClick={() => onBook(item)} className="px-5 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">Book</button>
+            <button onClick={() => onToggle(item.id)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+              {isExpanded ? <Icons.ChevronUp /> : <Icons.ChevronDown />}
+            </button>
+          </div>
+        </div>
+        {isExpanded && (
+          <div className="px-5 py-6 border-t border-slate-200 bg-slate-50 animate-fade-in">
+            <div className="flex gap-12 mb-4">
+              <div><p className="font-semibold text-gray-900 text-lg">{item.capacity}</p><p className="text-sm text-slate-500">Personer</p></div>
+              <div><p className="font-medium text-gray-900">{item.accessibility}</p><p className="text-sm text-slate-500">Tilgængelighed</p></div>
+              <div><p className="font-medium text-gray-900">{item.equipment}</p><p className="text-sm text-slate-500">A/V Udstyr</p></div>
+            </div>
+            <p className="text-gray-700 mb-3 flex items-center gap-2"><Icons.MapPin />{item.address}</p>
+            <p className="text-gray-600 leading-relaxed">{item.description}</p>
+          </div>
+        )}
+      </div>
+    );
+
+    // ============================================================
+    // COMPONENT: ResultRowMobile
+    // ============================================================
+    const ResultRowMobile = ({ item, onBook, onToggleFavorite }) => (
+      <div className="border-t border-slate-300 first:border-t-0 px-4 py-3">
+        <div className="flex items-center gap-3">
+          <img src={item.image} alt={item.name} className="w-8 h-8 rounded object-cover bg-gray-200" />
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-base text-gray-900 truncate">{item.name}</p>
+            <p className="text-sm text-slate-500 truncate">{item.location}</p>
+          </div>
+          <button onClick={() => onToggleFavorite(item.id)} className="p-1">
+            <Icons.Star filled={item.isFavorite} />
+          </button>
+          <button onClick={() => onBook(item)} className="px-3 py-1 bg-blue-600 text-white rounded text-sm font-medium">Book</button>
+          <button className="p-1 text-slate-500"><Icons.ChevronDown /></button>
+        </div>
+        <div className="flex gap-4 mt-2 pl-11 text-sm">
+          <div><p className="font-medium text-gray-900">{item.date}</p><p className="text-slate-500">Bookingdato</p></div>
+          <div><p className="font-medium text-gray-900">{item.time}</p><p className="text-slate-500">Start-tid</p></div>
+        </div>
+      </div>
+    );
+
+    // ============================================================
+    // COMPONENT: ResultsList
+    // ============================================================
+    const ResultsList = ({ items, expandedId, onToggle, onBook, onToggleFavorite }) => (
+      <div className="border border-slate-300 rounded-lg overflow-hidden bg-white shadow-sm">
+        {/* Desktop View */}
+        <div className="hidden lg:block">
+          {items.map(item => (
+            <ResultRowDesktop key={item.id} item={item} isExpanded={expandedId === item.id} onToggle={onToggle} onBook={onBook} onToggleFavorite={onToggleFavorite} />
+          ))}
+        </div>
+        {/* Mobile View */}
+        <div className="lg:hidden">
+          {items.map(item => (
+            <ResultRowMobile key={item.id} item={item} onBook={onBook} onToggleFavorite={onToggleFavorite} />
+          ))}
+        </div>
+      </div>
+    );
+
+    // ============================================================
+    // COMPONENT: ViewToggle
+    // ============================================================
+    const ViewToggle = ({ viewMode, onViewChange }) => (
+      <div className="flex justify-end">
+        <div className="inline-flex border border-slate-300 rounded-lg overflow-hidden shadow-sm">
+          <button onClick={() => onViewChange('map')} className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors ${viewMode === 'map' ? 'bg-slate-100 text-slate-900' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>
+            <Icons.Map /><span>Kortvisning</span>
+          </button>
+          <button onClick={() => onViewChange('calendar')} className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-l border-slate-300 transition-colors ${viewMode === 'calendar' ? 'bg-slate-100 text-slate-900' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>
+            <Icons.CalendarDays /><span>Dato oversigt</span>
+          </button>
+        </div>
+      </div>
+    );
+
+    // ============================================================
+    // COMPONENT: Footer
+    // ============================================================
+    const Footer = () => (
+      <footer className="mx-4 lg:mx-20 mt-12 mb-8 border border-slate-200 rounded-lg p-6 lg:p-8 bg-white shadow-sm">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <h3 className="font-bold text-lg text-gray-800 mb-2">Booking</h3>
+            <p className="text-gray-600">Ressource booking er leveret af Aarhus Kommune</p>
+          </div>
+          <div>
+            <h3 className="font-bold text-lg text-gray-800 mb-2">Samarbejdspartner</h3>
+            <p className="text-gray-600"><a href="#" className="text-blue-600 hover:underline">Log ind</a> for at få adgang til dine ressourcer.</p>
+          </div>
+        </div>
+        <div className="mt-6 pt-6 border-t border-slate-200">
+          <h3 className="font-bold text-lg text-gray-800 mb-2">Brug for hjælp?</h3>
+          <p className="text-gray-600">Ring på 86 40 20 10 (Åben hverdage 10 - 18)</p>
+        </div>
+      </footer>
+    );
+
+    // ============================================================
+    // COMPONENT: BookingModal
+    // ============================================================
+    const BookingModal = ({ item, onClose, onConfirm }) => {
+      if (!item) return null;
+      return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in p-4">
+          <div className="bg-white rounded-xl p-6 lg:p-8 max-w-md w-full shadow-2xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600"><Icons.Calendar /></div>
+              <h3 className="text-xl font-semibold text-gray-900">Bekræft booking</h3>
+            </div>
+            <div className="space-y-3 mb-6 bg-slate-50 rounded-lg p-4">
+              <div className="flex justify-between"><span className="text-slate-600">Lokale</span><span className="font-semibold text-gray-900">{item.name}</span></div>
+              <div className="flex justify-between"><span className="text-slate-600">Sted</span><span className="font-medium text-gray-900">{item.location}</span></div>
+              <div className="flex justify-between"><span className="text-slate-600">Dato</span><span className="font-medium text-gray-900">{item.fullDate}</span></div>
+              <div className="flex justify-between"><span className="text-slate-600">Tidspunkt</span><span className="font-medium text-gray-900">{item.time}</span></div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={onClose} className="flex-1 px-5 py-3 border border-slate-300 rounded-lg font-medium text-gray-700 hover:bg-slate-50 transition-colors">Annuller</button>
+              <button onClick={() => onConfirm(item)} className="flex-1 px-5 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm">Bekræft booking</button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ============================================================
+    // COMPONENT: SuccessToast
+    // ============================================================
+    const SuccessToast = ({ message, onClose }) => {
+      useEffect(() => { const t = setTimeout(onClose, 4000); return () => clearTimeout(t); }, [onClose]);
+      return (
+        <div className="fixed bottom-4 right-4 left-4 lg:left-auto lg:w-auto bg-green-600 text-white px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 z-50 animate-slide-up">
+          <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center"><Icons.Check /></div>
+          <span className="font-medium">{message}</span>
+        </div>
+      );
+    };
+
+    // ============================================================
+    // MAIN APP
+    // ============================================================
+    function BookAarhusApp() {
+      const [activeTab, setActiveTab] = useState('Find ressourcer');
+      const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+      const [expandedId, setExpandedId] = useState(1);
+      const [favorites, setFavorites] = useState(FAVORITES_DATA);
+      const [popular, setPopular] = useState(POPULAR_DATA);
+      const [bookingItem, setBookingItem] = useState(null);
+      const [successMessage, setSuccessMessage] = useState('');
+      const [viewMode, setViewMode] = useState('list');
+      
+      // Overlay states
+      const [showFilters, setShowFilters] = useState(false);
+      const [showLocation, setShowLocation] = useState(false);
+      const [showDatePicker, setShowDatePicker] = useState(false);
+      const [filters, setFilters] = useState({ type: [], facilities: [], seats: [], price: [], accessibility: [] });
+      
+      const handleFilterChange = (category, value) => {
+        setFilters(prev => ({
+          ...prev,
+          [category]: prev[category].includes(value) 
+            ? prev[category].filter(v => v !== value)
+            : [...prev[category], value]
+        }));
+      };
+      
+      const handleToggleFavorite = (id) => {
+        setFavorites(favorites.map(i => i.id === id ? { ...i, isFavorite: !i.isFavorite } : i));
+        setPopular(popular.map(i => i.id === id ? { ...i, isFavorite: !i.isFavorite } : i));
+      };
+      
+      const handleConfirmBooking = (item) => {
+        setBookingItem(null);
+        setSuccessMessage(`Booking bekræftet: ${item.name} - ${item.fullDate} kl. ${item.time}`);
+      };
+
+      return (
+        <div className="min-h-screen bg-slate-100">
+          {/* Headers */}
+          <MobileHeader onMenuClick={() => setMobileMenuOpen(true)} />
+          <DesktopHeader />
+          
+          {/* Navigation */}
+          <NavigationBar activeTab={activeTab} onTabChange={setActiveTab} />
+          
+          {/* Mobile Menu */}
+          <MobileMenu isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} activeTab={activeTab} onTabChange={setActiveTab} />
+          
+          {/* Search */}
+          <SearchWrapper 
+            onLocationClick={() => setShowLocation(true)}
+            onDateClick={() => setShowDatePicker(true)}
+            onFiltersClick={() => setShowFilters(true)}
+          />
+          
+          {/* Favorites Section */}
+          <section className="mx-4 lg:mx-20 mt-6 lg:mt-8">
+            <SectionHeader title="Dine favoritter" subtitle="Dine senest valgte favoritter" />
+            <ResultsList items={favorites} expandedId={expandedId} onToggle={id => setExpandedId(expandedId === id ? null : id)} onBook={setBookingItem} onToggleFavorite={handleToggleFavorite} />
+          </section>
+          
+          {/* Popular Section */}
+          <section className="mx-4 lg:mx-20 mt-8 lg:mt-10">
+            <SectionHeader title="Populære lokaler" subtitle="Ofte brugte og udvalgte lokaler" />
+            <ResultsList items={popular} expandedId={expandedId} onToggle={id => setExpandedId(expandedId === id ? null : id)} onBook={setBookingItem} onToggleFavorite={handleToggleFavorite} />
+          </section>
+          
+          {/* View Toggle */}
+          <div className="mx-4 lg:mx-20 mt-6 lg:mt-8">
+            <ViewToggle viewMode={viewMode} onViewChange={setViewMode} />
+          </div>
+          
+          {/* Footer */}
+          <Footer />
+          
+          {/* Overlays */}
+          <OverlayFilters isOpen={showFilters} onClose={() => setShowFilters(false)} filters={filters} onFilterChange={handleFilterChange} />
+          <OverlayLocation isOpen={showLocation} onClose={() => setShowLocation(false)} onSelect={() => {}} />
+          <OverlayDatePicker isOpen={showDatePicker} onClose={() => setShowDatePicker(false)} />
+          <BookingModal item={bookingItem} onClose={() => setBookingItem(null)} onConfirm={handleConfirmBooking} />
+          
+          {/* Toast */}
+          {successMessage && <SuccessToast message={successMessage} onClose={() => setSuccessMessage('')} />}
+        </div>
+      );
+    }
+
+    // Render
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<BookAarhusApp />);
+  </script>
+</body>
+</html>
