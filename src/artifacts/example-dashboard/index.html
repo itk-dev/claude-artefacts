@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Example Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/recharts@2.10.4/umd/Recharts.min.js"></script>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } = Recharts;
+
+    // Example: Using a local image
+    // Place images in the ./images folder and reference them like this:
+    // const logoImage = './images/logo.png';
+
+    const data = [
+      { name: 'Jan', value: 4000, users: 2400 },
+      { name: 'Feb', value: 3000, users: 1398 },
+      { name: 'Mar', value: 2000, users: 9800 },
+      { name: 'Apr', value: 2780, users: 3908 },
+      { name: 'May', value: 1890, users: 4800 },
+      { name: 'Jun', value: 2390, users: 3800 },
+    ];
+
+    function StatCard({ title, value, change, icon }) {
+      const isPositive = change >= 0;
+      return (
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-100">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-slate-500 text-sm font-medium">{title}</span>
+            <span className="text-2xl">{icon}</span>
+          </div>
+          <div className="text-3xl font-bold text-slate-800 mb-1">{value}</div>
+          <div className={`text-sm ${isPositive ? 'text-emerald-600' : 'text-red-500'}`}>
+            {isPositive ? '+' : ''}{change}% from last month
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      return (
+        <div className="min-h-screen bg-slate-50">
+          {/* Header */}
+          <header className="bg-white border-b border-slate-200 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {/* Example: You could use a local image for a logo here */}
+                {/* <img src="./images/logo.png" alt="Logo" className="h-8 w-8" /> */}
+                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold">A</span>
+                </div>
+                <h1 className="text-xl font-semibold text-slate-800">Analytics Dashboard</h1>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-slate-500">Last updated: Just now</span>
+              </div>
+            </div>
+          </header>
+
+          <main className="p-6">
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <StatCard title="Total Revenue" value="$45,231" change={12.5} icon="$" />
+              <StatCard title="Active Users" value="2,338" change={8.2} icon="*" />
+              <StatCard title="Conversion Rate" value="3.24%" change={-2.1} icon="%" />
+              <StatCard title="Avg. Session" value="4m 32s" change={5.7} icon=":" />
+            </div>
+
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-100">
+                <h2 className="text-lg font-semibold text-slate-800 mb-4">Revenue Over Time</h2>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={data}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="name" stroke="#64748b" />
+                      <YAxis stroke="#64748b" />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="value" stroke="#6366f1" strokeWidth={2} dot={{ fill: '#6366f1' }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-100">
+                <h2 className="text-lg font-semibold text-slate-800 mb-4">User Growth</h2>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={data}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="name" stroke="#64748b" />
+                      <YAxis stroke="#64748b" />
+                      <Tooltip />
+                      <Bar dataKey="users" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            {/* Image Usage Example Section */}
+            <div className="mt-8 bg-white rounded-xl shadow-sm p-6 border border-slate-100">
+              <h2 className="text-lg font-semibold text-slate-800 mb-4">Image Support</h2>
+              <div className="bg-slate-50 rounded-lg p-4 font-mono text-sm text-slate-600">
+                <p className="mb-2">// To use local images, place them in ./images/ and reference them:</p>
+                <p className="text-indigo-600">&lt;img src="./images/my-image.png" alt="My Image" /&gt;</p>
+                <p className="mt-4 mb-2">// For shared assets across artifacts:</p>
+                <p className="text-indigo-600">&lt;img src="../../assets/images/shared.png" alt="Shared" /&gt;</p>
+              </div>
+            </div>
+          </main>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
