@@ -7,9 +7,15 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
 const artifactsDir = path.join(rootDir, 'src', 'artifacts');
-const outputFile = path.join(rootDir, 'public', 'artifacts-data.js');
+const publicDir = path.join(rootDir, 'public');
+const outputFile = path.join(publicDir, 'artifacts-data.js');
 
 function buildArtifactsData() {
+  // Ensure public directory exists
+  if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir, { recursive: true });
+  }
+
   const artifacts = [];
 
   if (!fs.existsSync(artifactsDir)) {
