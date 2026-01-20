@@ -9,8 +9,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.resolve(__dirname, '..', 'dist');
 
 const ROBOTS_META = '<meta name="robots" content="noindex, nofollow">';
-const BANNER_HTML = `<div style="background: #fef3c7; color: #92400e; text-align: center; padding: 8px 16px; font-size: 13px; font-family: system-ui, sans-serif;">
-    This is a prototype for idea generation and not a real product
+const BANNER_HTML = `<div style="position: fixed; top: 0; left: 0; right: 0; z-index: 9999; background: #fde047; color: #713f12; text-align: center; padding: 8px 16px; font-size: 13px; font-family: system-ui, sans-serif;">
+    This is an artefact for idea generation and not a real product
   </div>`;
 
 function injectBanner() {
@@ -39,7 +39,7 @@ function injectBanner() {
     }
 
     // Inject banner if not present (check for the specific background color)
-    if (!content.includes('background: #fef3c7') && !content.includes('background:#fef3c7')) {
+    if (!content.includes('background: #fde047') && !content.includes('background:#fde047')) {
       content = content.replace(
         /<body>/,
         `<body>\n  ${BANNER_HTML}`
