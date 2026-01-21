@@ -66,9 +66,9 @@
         {
           id: 1,
           date: '2023',
-          month: '',
+          month: 'August',
           title: 'Udpegning',
-          subtitle: 'Strategisk Byrumsplan',
+          subtitle: 'Dialog',
           description: 'Hjortshøj Stationsplads udpeges som ét af 13 byrum i Aarhus Kommunes Strategiske Byrumsplan.',
           type: 'milestone',
           status: 'completed',
@@ -80,9 +80,9 @@
         {
           id: 2,
           date: '2025',
-          month: 'Forår',
+          month: 'April',
           title: 'Dialog med Fællesråd',
-          subtitle: 'Hjortshøj Landsbyforum',
+          subtitle: 'Dialog',
           description: 'Gåtur på Stationspladsen og efterfølgende møde om stedets identitet og potentialer med fællesrådet.',
           type: 'meeting',
           status: 'completed',
@@ -96,7 +96,7 @@
           date: '2025',
           month: 'August',
           title: 'Workshop med Virupskolen',
-          subtitle: 'Børne- og ungeperspektiv',
+          subtitle: 'Begivenhed',
           description: 'Formiddag sammen med skoleelever fra Virupskolen om fremtidens stationsplads.',
           type: 'workshop',
           status: 'completed',
@@ -111,7 +111,7 @@
           date: '2025',
           month: 'August',
           title: 'Pop-up Dialog',
-          subtitle: 'Kaffe på Stationspladsen',
+          subtitle: 'Dialog',
           description: 'Pop-up og kaffe på Stationspladsen med borgere. Mange gode input fra det brede lokale borgerperspektiv.',
           type: 'event',
           status: 'completed',
@@ -125,7 +125,7 @@
           date: '2025',
           month: 'September',
           title: 'Digital Dialog',
-          subtitle: 'Online høring',
+          subtitle: 'Høring',
           description: 'Mulighed for at berige og kvalificere de identificerede temaer, samt komme med supplerende nye input.',
           type: 'digital',
           status: 'completed',
@@ -137,9 +137,9 @@
         {
           id: 6,
           date: '2025',
-          month: 'Efterår',
+          month: 'Oktober',
           title: 'Udarbejdelse af Forslag',
-          subtitle: 'Design & Planlægning',
+          subtitle: 'Dialog',
           description: 'De mange input danner fundament for udarbejdelse af et forslag til omdannelsen af Hjortshøj Stationsplads.',
           type: 'planning',
           status: 'current',
@@ -150,8 +150,8 @@
         },
         {
           id: 9,
-          date: 'Note',
-          month: '',
+          date: '2025',
+          month: 'Oktober',
           title: 'Redaktionel bemærkning',
           subtitle: 'Note',
           description: 'Dette er en redaktionel note fra projektteamet med vigtig information om projektet.',
@@ -166,9 +166,9 @@
         {
           id: 7,
           date: '2026',
-          month: '',
+          month: 'Januar',
           title: 'Offentlig Høring',
-          subtitle: 'Forslaget præsenteres',
+          subtitle: 'Høring',
           description: 'Forslaget til omdannelse af Stationspladsen sendes i offentlig høring.',
           type: 'hearing',
           status: 'upcoming',
@@ -179,10 +179,10 @@
         },
         {
           id: 8,
-          date: '2026+',
-          month: '',
+          date: '2027',
+          month: 'Januar',
           title: 'Realisering',
-          subtitle: 'Anlæg & Udførelse',
+          subtitle: 'Note',
           description: 'Omdannelsen af Hjortshøj Stationsplads realiseres.',
           type: 'construction',
           status: 'upcoming',
@@ -508,6 +508,24 @@
                         letterSpacing: '0.04em'
                       }}>
                         Note
+                      </div>
+                    )}
+
+                    {item.status === 'completed' && (
+                      <div style={{
+                        position: 'absolute',
+                        top: item.image ? (isMobile ? '128px' : '148px') : '8px',
+                        right: '12px',
+                        padding: '3px 8px',
+                        background: colors.petroleum500,
+                        border: 'none',
+                        color: colors.white,
+                        fontSize: '10px',
+                        fontWeight: '600',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em'
+                      }}>
+                        ✓ Afsluttet
                       </div>
                     )}
 
