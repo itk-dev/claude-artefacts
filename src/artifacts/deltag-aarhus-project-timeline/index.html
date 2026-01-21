@@ -662,9 +662,10 @@
                   <div key={item.id} style={{ minWidth: '100%', padding: '0 8px', boxSizing: 'border-box' }}>
                     <div style={{
                       display: 'flex',
+                      flexDirection: isMobile ? 'column' : 'row',
                       background: colors.white,
                       border: `1px solid ${colors.gray300}`,
-                      minHeight: '280px',
+                      minHeight: isMobile ? 'auto' : '280px',
                       position: 'relative',
                       overflow: 'hidden'
                     }}>
@@ -673,52 +674,40 @@
                           position: 'absolute',
                           top: 0,
                           left: 0,
-                          width: '4px',
-                          height: '100%',
+                          width: isMobile ? '100%' : '4px',
+                          height: isMobile ? '4px' : '100%',
                           background: colors.orange500
                         }} />
                       )}
 
-                      {item.image ? (
+                      {item.image && (
                         <div style={{
-                          width: '40%',
-                          minHeight: '280px',
+                          width: isMobile ? '100%' : '40%',
+                          height: isMobile ? '160px' : 'auto',
+                          minHeight: isMobile ? '160px' : '280px',
                           background: `url(${item.image}) center center / cover no-repeat`
                         }} />
-                      ) : (
-                        <div style={{
-                          width: '40%',
-                          minHeight: '280px',
-                          background: getStatusBg(item.status),
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '64px',
-                          opacity: 0.3
-                        }}>
-                          {item.icon}
-                        </div>
                       )}
 
                       <div style={{
-                        width: '60%',
-                        padding: '48px 36px 32px',
+                        width: isMobile ? '100%' : (item.image ? '60%' : '100%'),
+                        padding: isMobile ? '16px' : '48px 36px 32px',
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'center'
                       }}>
                         <div style={{
                           position: 'absolute',
-                          top: '16px',
-                          right: '20px',
-                          padding: '5px 12px',
+                          top: isMobile ? (item.image ? '168px' : '8px') : '16px',
+                          right: isMobile ? '12px' : '20px',
+                          padding: isMobile ? '3px 8px' : '5px 12px',
                           background: item.status === 'current' ? colors.orange500
                             : item.status === 'completed' ? colors.petroleum500
                             : item.status === 'note' ? colors.note500
                             : colors.gray600,
                           border: 'none',
                           color: colors.white,
-                          fontSize: '11px',
+                          fontSize: isMobile ? '10px' : '11px',
                           fontWeight: '600',
                           textTransform: 'uppercase',
                           letterSpacing: '0.04em'
@@ -730,10 +719,10 @@
                         </div>
 
                         <div style={{
-                          marginBottom: '14px'
+                          marginBottom: isMobile ? '8px' : '14px'
                         }}>
                           <span style={{
-                            fontSize: '13px',
+                            fontSize: isMobile ? '11px' : '13px',
                             fontWeight: '600',
                             color: getStatusColor(item.status),
                             textTransform: 'uppercase',
@@ -745,7 +734,7 @@
 
                         <h2 style={{
                           margin: '0 0 6px 0',
-                          fontSize: '26px',
+                          fontSize: isMobile ? '18px' : '26px',
                           fontWeight: '700',
                           color: colors.black
                         }}>
@@ -754,7 +743,7 @@
 
                         <p style={{
                           margin: '0 0 12px 0',
-                          fontSize: '14px',
+                          fontSize: isMobile ? '11px' : '14px',
                           fontWeight: '600',
                           color: getStatusColor(item.status),
                           textTransform: 'uppercase',
@@ -765,7 +754,7 @@
 
                         <p style={{
                           margin: 0,
-                          fontSize: '15px',
+                          fontSize: isMobile ? '13px' : '15px',
                           lineHeight: '1.6',
                           color: colors.gray800
                         }}>
@@ -781,11 +770,11 @@
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: '6px',
-                              marginTop: '20px',
-                              padding: '10px 18px',
+                              marginTop: isMobile ? '12px' : '20px',
+                              padding: isMobile ? '8px 14px' : '10px 18px',
                               background: colors.petroleum500,
                               color: colors.white,
-                              fontSize: '14px',
+                              fontSize: isMobile ? '13px' : '14px',
                               fontWeight: '600',
                               textDecoration: 'none',
                               alignSelf: 'flex-start',
